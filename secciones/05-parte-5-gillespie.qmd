@@ -55,7 +55,7 @@ cat(sprintf("Var  de X (simulada): %.3f  |  Teórica: %.1f (Poisson)\n",
             var(ssa_res$X), 10))
 ```
 
-```{r gillespie-plot, fig.cap="Trayectoria estocástica de mRNA por SSA de Gillespie."}
+```{r gillespie-plot, fig.cap="Figura 5.1.1: Trayectoria estocástica de mRNA por SSA de Gillespie (línea roja: equilibrio teórico k₁/k₂ = 10)."}
 # Subsamplear para el gráfico
 idx_plot <- seq(1, nrow(ssa_res), by = max(1, nrow(ssa_res) %/% 5000))
 
@@ -68,7 +68,7 @@ ggplot(ssa_res[idx_plot, ], aes(x = time, y = X)) +
   theme_minimal()
 ```
 
-```{r gillespie-dist, fig.cap="Distribución estacionaria simulada vs Poisson(10) teórica."}
+```{r gillespie-dist, fig.cap="Figura 5.1.2: Distribución estacionaria simulada (histograma) vs Poisson(10) teórica (línea roja)."}
 # Distribución en estado estacionario (descartamos transitorio)
 burn_ssa <- ssa_res$X[ssa_res$time > 50]
 
@@ -91,7 +91,7 @@ ggplot() +
 
 ### Múltiples trayectorias
 
-```{r gillespie-multiples, fig.cap="Cinco trayectorias independientes del SSA."}
+```{r gillespie-multiples, fig.cap="Figura 5.1.3: Cinco trayectorias independientes del SSA de Gillespie."}
 # 5 trayectorias independientes
 trajs <- lapply(1:5, function(i) {
   res <- gillespie(Tmax = 100, k1 = 10, k2 = 1, seed = i * 7)

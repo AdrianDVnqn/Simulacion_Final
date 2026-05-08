@@ -9,7 +9,7 @@ La posterior conjugada es:
 
 $$\theta \mid \text{datos} \sim \text{Beta}(\alpha + k,\ \beta + n - k) = \text{Beta}(8, 4)$$
 
-```{r posterior-analitica, fig.cap="Posterior analítica Beta(8,4)."}
+```{r posterior-analitica, fig.cap="Figura 2.1.1: Posterior analítica Beta(8,4)."}
 theta_grid <- seq(0, 1, length.out = 500)
 posterior  <- dbeta(theta_grid, 8, 4)
 
@@ -67,7 +67,7 @@ cat(sprintf("Tasa de aceptación: %.2f%%\n", res$tasa_aceptacion * 100))
 
 #### Traceplot
 
-```{r mh-traceplot, fig.cap="Traceplot de la cadena MH (con burn-in indicado)."}
+```{r mh-traceplot, fig.cap="Figura 2.2.1: Traceplot de la cadena MH (con burn-in indicado en línea roja)."}
 df_trace <- data.frame(iter = 1:length(cadena), theta = cadena)
 
 ggplot(df_trace, aes(x = iter, y = theta)) +
@@ -82,14 +82,14 @@ ggplot(df_trace, aes(x = iter, y = theta)) +
 
 #### Autocorrelación
 
-```{r mh-acf, fig.cap="Autocorrelación de la cadena post burn-in."}
+```{r mh-acf, fig.cap="Figura 2.2.2: Autocorrelación de la cadena post burn-in."}
 acf(cadena_post_burnin, main = "Autocorrelación — Cadena MH (post burn-in)",
     col = "#2196F3", lag.max = 50)
 ```
 
 #### Histograma vs Beta(8,4)
 
-```{r mh-hist, fig.cap="Histograma MH vs posterior analítica Beta(8,4)."}
+```{r mh-hist, fig.cap="Figura 2.2.3: Histograma MH vs posterior analítica Beta(8,4) (línea roja punteada)."}
 df_mh <- data.frame(theta = cadena_post_burnin)
 
 ggplot(df_mh, aes(x = theta)) +

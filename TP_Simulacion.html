@@ -293,47 +293,53 @@ José Roa Ramírez</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/lcg-hist-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Histogramas LCG bueno vs RANDU. Ambos parecen uniformes marginalmente.</figcaption>
+<figcaption>Figura 1.1.1: Histogramas LCG bueno vs RANDU. Ambos parecen uniformes marginalmente.</figcaption>
 </figure>
 </div>
 </div>
 </div>
+<p>Los histogramas muestran que ambos generadores producen distribuciones marginales aproximadamente uniformes. Sin embargo, este resultado por sí solo no es suficiente para validar la calidad de un generador: la uniformidad marginal puede ocultar dependencias de mayor orden que solo aparecen al analizar la estructura tridimensional.</p>
 </section>
 <section id="gráfico-de-triples-u_i-u_i1-u_i2" class="level3">
 <h3 class="anchored" data-anchor-id="gráfico-de-triples-u_i-u_i1-u_i2">Gráfico de triples (u_i, u_{i+1}, u_{i+2})</h3>
-<p>El gráfico de triples revela la estructura de hiperplanos característica del LCG defectuoso.</p>
+<p>El gráfico de triples revela la estructura de hiperplanos característica del LCG defectuoso. Se muestran 4 vistas: LCG bueno a la izquierda, RANDU a la derecha, con dos azimuths para comparar la estructura de planos.</p>
 <div class="cell" data-layout-align="center">
 <details class="code-fold">
 <summary>Código</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mpl_toolkits.mplot3d <span class="im">import</span> Axes3D</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>fig <span class="op">=</span> plt.figure(figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">5</span>))</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> idx, (u, label) <span class="kw">in</span> <span class="bu">enumerate</span>([(u_good_py, <span class="st">"Bueno (glibc)"</span>), (u_bad_py, <span class="st">"RANDU"</span>)]):</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ax <span class="op">=</span> fig.add_subplot(<span class="dv">1</span>, <span class="dv">2</span>, idx <span class="op">+</span> <span class="dv">1</span>, projection<span class="op">=</span><span class="st">'3d'</span>)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    ax.scatter(u[:<span class="op">-</span><span class="dv">2</span>], u[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>], u[<span class="dv">2</span>:], s<span class="op">=</span><span class="fl">0.3</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    ax.set_title(label)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"u_i"</span>)<span class="op">;</span> ax.set_ylabel(<span class="st">"u_{i+1}"</span>)<span class="op">;</span> ax.set_zlabel(<span class="st">"u_{i+2}"</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>views <span class="op">=</span> [<span class="dv">35</span>, <span class="dv">55</span>]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>datasets <span class="op">=</span> [</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    (u_good_py, <span class="st">"LCG bueno"</span>, <span class="st">"#2E7D32"</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    (u_bad_py,  <span class="st">"RANDU"</span>,     <span class="st">"#C62828"</span>),</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>fig <span class="op">=</span> plt.figure(figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">10</span>))</span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"lcg_triples.png"</span>, bbox_inches<span class="op">=</span><span class="st">'tight'</span>)</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> row, azim <span class="kw">in</span> <span class="bu">enumerate</span>(views):</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> col, (u, label, color) <span class="kw">in</span> <span class="bu">enumerate</span>(datasets):</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    ax <span class="op">=</span> fig.add_subplot(<span class="dv">2</span>, <span class="dv">2</span>, row <span class="op">*</span> <span class="dv">2</span> <span class="op">+</span> col <span class="op">+</span> <span class="dv">1</span>, projection<span class="op">=</span><span class="st">'3d'</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    ax.scatter(u[:<span class="op">-</span><span class="dv">2</span>], u[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>], u[<span class="dv">2</span>:], s<span class="op">=</span><span class="fl">0.25</span>, alpha<span class="op">=</span><span class="fl">0.25</span>, color<span class="op">=</span>color)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    ax.view_init(elev<span class="op">=</span><span class="dv">18</span>, azim<span class="op">=</span>azim)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="ss">f"</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss"> · azim=</span><span class="sc">{</span>azim<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"u_i"</span>)<span class="op">;</span> ax.set_ylabel(<span class="st">"u_{i+1}"</span>)<span class="op">;</span> ax.set_zlabel(<span class="st">"u_{i+2}"</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    ax.set_box_aspect((<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"lcg_triples.png"</span>, bbox_inches<span class="op">=</span><span class="st">'tight'</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="TP_Simulacion_files/figure-html/lcg-triples-1.png" class="img-fluid figure-img" width="1152"></p>
-<figcaption>Triples 3D: RANDU muestra estructura de planos (falla espectral).</figcaption>
+<p><img src="TP_Simulacion_files/figure-html/lcg-triples-1.png" class="img-fluid figure-img" width="1344"></p>
+<figcaption>Figura 1.1.2: Triples 3D — Comparación entre LCG bueno y RANDU. Los planos discretos del RANDU son claramente visibles en el azimuth 55°.</figcaption>
 </figure>
 </div>
 </div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="lcg_triples.png" class="img-fluid figure-img" style="width:95.0%"></p>
-<figcaption>Triples 3D generados en Python</figcaption>
-</figure>
-</div>
+<p>Se observa que el LCG “bueno” muestra una nube de puntos sin estructura aparente, mientras que RANDU exhibe claramente planos discretos, lo que indica una mala calidad como generador de números pseudoaleatorios.</p>
+<p>Desde el punto de vista metodológico, este gráfico es más informativo que el histograma porque permite evaluar independencia entre muestras consecutivas. En particular, la vista con azimuth 55° deja más visible la separación en hiperplanos del RANDU, reforzando la idea de que una buena apariencia en 1D no garantiza un buen comportamiento en dimensiones superiores.</p>
 </section>
 <section id="runs-test" class="level3">
 <h3 class="anchored" data-anchor-id="runs-test">Runs Test</h3>
@@ -385,7 +391,8 @@ p-value = 0.04337
 alternative hypothesis: nonrandomness</code></pre>
 </div>
 </div>
-<p><strong>Discusión:</strong> [Completar con los p-valores obtenidos. Un p-valor &gt; 0.05 no rechaza la hipótesis de aleatoriedad.]</p>
+<p>Para el LCG ‘bueno’, el runs test da un p-valor de 0.4839, es decir que no se rechaza la hipótesis de aleatoriedad. Para el LCG ‘malo’ (RANDU), el p-valor es de 0.04337, lo que indica una fuerte evidencia contra la aleatoriedad, confirmando su mala calidad como generador de números pseudoaleatorios.</p>
+<p>En conjunto, los resultados de los histogramas, el gráfico de triples y el runs test apuntan en la misma dirección: el LCG con parámetros de referencia pasa las verificaciones básicas, mientras que RANDU falla al inspeccionarlo con herramientas más sensibles a la dependencia serial. Esta comparación ilustra por qué el diagnóstico de generadores pseudoaleatorios no debe apoyarse en una sola métrica.</p>
 <hr>
 </section>
 </section>
@@ -427,7 +434,7 @@ alternative hypothesis: nonrandomness</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/pi-monte-carlo-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Estimación de pi con Monte Carlo. La curva converge al valor real.</figcaption>
+<figcaption>Figura 1.2.1: Convergencia de la estimación de π. La curva converge al valor teórico (línea roja punteada).</figcaption>
 </figure>
 </div>
 </div>
@@ -436,23 +443,33 @@ alternative hypothesis: nonrandomness</code></pre>
 <details class="code-fold">
 <summary>Código</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>df_scatter <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> u1[<span class="dv">1</span><span class="sc">:</span><span class="dv">3000</span>], <span class="at">y =</span> u2[<span class="dv">1</span><span class="sc">:</span><span class="dv">3000</span>], <span class="at">dentro =</span> dentro[<span class="dv">1</span><span class="sc">:</span><span class="dv">3000</span>])</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_scatter, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">color =</span> dentro)) <span class="sc">+</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">0.4</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"#E91E63"</span>, <span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"#4CAF50"</span>),</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Fuera"</span>, <span class="st">"Dentro"</span>)) <span class="sc">+</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_equal</span>() <span class="sc">+</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Puntos Monte Carlo"</span>, <span class="at">color =</span> <span class="st">""</span>) <span class="sc">+</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Crear datos para la frontera del círculo (x^2 + y^2 = 1)</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>theta <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, pi<span class="sc">/</span><span class="dv">2</span>, <span class="at">length.out =</span> <span class="dv">100</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>df_circle <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> <span class="fu">cos</span>(theta), <span class="at">y =</span> <span class="fu">sin</span>(theta))</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_scatter, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">color =</span> dentro)) <span class="sc">+</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">0.4</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_path</span>(<span class="at">data =</span> df_circle, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y), <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">linewidth =</span> <span class="dv">1</span>, <span class="at">inherit.aes =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"#E91E63"</span>, <span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"#4CAF50"</span>),</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Fuera"</span>, <span class="st">"Dentro"</span>)) <span class="sc">+</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_equal</span>() <span class="sc">+</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Puntos Monte Carlo con frontera del cuarto de círculo"</span>, <span class="at">color =</span> <span class="st">""</span>) <span class="sc">+</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/pi-scatter-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Scatter plot Monte Carlo para pi.</figcaption>
+<figcaption>Figura 1.2.2: Puntos Monte Carlo con frontera del cuarto de círculo (x² + y² = 1). Los puntos verdes están dentro del círculo.</figcaption>
 </figure>
 </div>
 </div>
 </div>
+<p>La estimación de <span class="math inline">\(\pi\)</span> converge hacia el valor teórico (línea roja punteada en el gráfico ) a medida que aumenta el número de simulaciones. Las oscilaciones observadas son inherentes al error Monte Carlo y disminuyen a razón de <span class="math inline">\(1/\sqrt{N}\)</span> en media. El gráfico de convergencia ilustra claramente este comportamiento asintótico.</p>
+<p>El diagrama de dispersión confirma geométricamente la lógica del método: la frontera del círculo (línea negra) separa los puntos dentro de los que están fuera. La proporción observada de puntos verdes (dentro) aproxima la razón de áreas, <span class="math inline">\(\frac{\text{área del cuarto de círculo}}{\text{área del cuadrado}} = \frac{\pi/4}{1} = \pi/4\)</span>, de donde obtenemos la estimación multiplicando por 4.</p>
+<p>Con <span class="math inline">\(N = 50000\)</span> simulaciones, hemos obtenido una estimación muy cercana al valor teórico, con un error del orden de <span class="math inline">\(10^{-3}\)</span>. Para aplicaciones que requieran mayor precisión, bastaría escalar <span class="math inline">\(N\)</span> según la tolerancia deseada, confirmando que el método es efectivo aunque computacionalmente costoso en dimensiones altas.</p>
+<p><strong>Conclusión de la Parte 1:</strong> la evidencia empírica sugiere que el generador bueno y la estimación de <span class="math inline">\(\pi\)</span> cumplen con el comportamiento esperado, mientras que RANDU exhibe fallas estructurales incompatibles con su uso en simulación seria. Esta parte muestra la importancia de combinar observación gráfica, pruebas estadísticas e interpretación teórica para evaluar resultados simulados.</p>
 <div style="page-break-after: always;"></div>
 </section>
 </section>
@@ -480,7 +497,7 @@ alternative hypothesis: nonrandomness</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/posterior-analitica-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Posterior analítica Beta(8,4).</figcaption>
+<figcaption>Figura 2.1.1: Posterior analítica Beta(8,4).</figcaption>
 </figure>
 </div>
 </div>
@@ -553,7 +570,7 @@ alternative hypothesis: nonrandomness</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/mh-traceplot-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Traceplot de la cadena MH (con burn-in indicado).</figcaption>
+<figcaption>Figura 2.2.1: Traceplot de la cadena MH (con burn-in indicado en línea roja).</figcaption>
 </figure>
 </div>
 </div>
@@ -571,7 +588,7 @@ alternative hypothesis: nonrandomness</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/mh-acf-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Autocorrelación de la cadena post burn-in.</figcaption>
+<figcaption>Figura 2.2.2: Autocorrelación de la cadena post burn-in.</figcaption>
 </figure>
 </div>
 </div>
@@ -597,7 +614,7 @@ alternative hypothesis: nonrandomness</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/mh-hist-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Histograma MH vs posterior analítica Beta(8,4).</figcaption>
+<figcaption>Figura 2.2.3: Histograma MH vs posterior analítica Beta(8,4) (línea roja punteada).</figcaption>
 </figure>
 </div>
 </div>
@@ -743,7 +760,7 @@ alternative hypothesis: nonrandomness</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/mm1-plot-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Longitud de la cola M/M/1 a lo largo del tiempo (8 horas).</figcaption>
+<figcaption>Figura 3.1.1: Longitud de la cola M/M/1 a lo largo del tiempo (8 horas, ρ = 2.5 &gt; 1 implica inestabilidad).</figcaption>
 </figure>
 </div>
 </div>
@@ -864,7 +881,7 @@ Sistema estable (λ=3, μ=4): ρ=0.75</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/gbm-sim-1.png" class="img-fluid figure-img" width="1248"></p>
-<figcaption>1000 trayectorias GBM simuladas por esquema de Euler-Maruyama.</figcaption>
+<figcaption>Figura 4.1.1: 1000 trayectorias GBM simuladas por esquema de Euler-Maruyama (izq) y distribución final vs log-normal teórica (der).</figcaption>
 </figure>
 </div>
 </div>
@@ -1013,7 +1030,7 @@ VaR 95% (percentil 5%): 74.27</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/gillespie-plot-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Trayectoria estocástica de mRNA por SSA de Gillespie.</figcaption>
+<figcaption>Figura 5.1.1: Trayectoria estocástica de mRNA por SSA de Gillespie (línea roja: equilibrio teórico k₁/k₂ = 10).</figcaption>
 </figure>
 </div>
 </div>
@@ -1044,7 +1061,7 @@ VaR 95% (percentil 5%): 74.27</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/gillespie-dist-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Distribución estacionaria simulada vs Poisson(10) teórica.</figcaption>
+<figcaption>Figura 5.1.2: Distribución estacionaria simulada (histograma) vs Poisson(10) teórica (línea roja).</figcaption>
 </figure>
 </div>
 </div>
@@ -1075,7 +1092,7 @@ VaR 95% (percentil 5%): 74.27</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/gillespie-multiples-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Cinco trayectorias independientes del SSA.</figcaption>
+<figcaption>Figura 5.1.3: Cinco trayectorias independientes del SSA de Gillespie.</figcaption>
 </figure>
 </div>
 </div>
@@ -1228,7 +1245,7 @@ VaR 95% (percentil 5%): 74.27</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="TP_Simulacion_files/figure-html/integradora-plot-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Parte integradora: biomarcador al momento de atención vs tiempo de espera.</figcaption>
+<figcaption>Figura 6.1.1: Parte integradora — Biomarcador al momento de atención vs tiempo de espera (línea roja: umbral clínico = 12).</figcaption>
 </figure>
 </div>
 </div>
