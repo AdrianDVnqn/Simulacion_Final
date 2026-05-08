@@ -6,7 +6,7 @@ Repositorio del trabajo práctico integral de Simulación.
 
 - `main` queda como rama estable y no se edita directo.
 - Cada parte del TP se trabaja en una rama dedicada a esa sección.
-- Antes de empezar una tarea, crear la rama desde `main` actualizado.
+- Antes de empezar una tarea, primero asegurarse de estar parado en `main` actualizado.
 - Cuando la tarea está lista, subir la rama y abrir un Pull Request hacia `main`.
 - Si hace falta tocar `TP_Simulacion.qmd`, hacerlo solo para integrar inclusiones o ajustes finales.
 
@@ -22,13 +22,24 @@ Repositorio del trabajo práctico integral de Simulación.
 
 ## Cómo trabajar en equipo
 
-1. Actualizar `main` con `git pull` antes de arrancar.
-2. Crear la rama de la sección que toca: `git checkout -b sec-1-rng-montecarlo`.
-3. Trabajar solo en los archivos de `secciones/` de esa parte.
-4. Hacer commits chicos y descriptivos.
-5. Subir la rama con `git push -u origin nombre-de-rama`.
-6. Abrir Pull Request hacia `main`.
-7. No mezclar dos secciones distintas en la misma rama salvo que sea integración final.
+1. Abrir una terminal dentro de la carpeta del proyecto.
+2. Pararse en `main` y actualizarla con `git pull`.
+3. Cambiarse a la rama que corresponde con `git switch sec-1-rng-montecarlo`.
+4. Si Git dice que la rama no existe todavía en tu compu, usar primero `git fetch origin` y después `git switch sec-1-rng-montecarlo`.
+5. Trabajar solo en los archivos de `secciones/` de esa parte.
+6. Guardar los cambios con commits chicos y claros.
+7. Subir la rama con `git push -u origin nombre-de-rama`.
+8. Abrir Pull Request hacia `main`.
+9. No mezclar dos secciones distintas en la misma rama salvo que sea integración final.
+
+## Comandos básicos para no perderse
+
+- Ver en qué rama estás: `git branch`
+- Ir a la rama estable: `git switch main`
+- Ir a la rama de una sección: `git switch sec-3-mm1`
+- Actualizar lo último del repo: `git pull`
+- Subir cambios: `git push`
+- Subir una rama nueva y dejarla vinculada: `git push -u origin nombre-de-rama`
 
 ## Recomendación para Quarto
 
