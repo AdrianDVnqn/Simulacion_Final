@@ -57,7 +57,7 @@ cat(sprintf("En sistema:  %d (cola acumulada por ρ > 1)\n",
             res_mm1$arrivals - res_mm1$departures))
 ```
 
-```{r mm1-plot, fig.cap="Figura 3.1.1: Longitud de la cola M/M/1 a lo largo del tiempo (8 horas, ρ = 2.5 > 1 implica inestabilidad)."}
+```{r fig-3-1-1, fig.cap="Longitud de la cola M/M/1 a lo largo del tiempo (8 horas, ρ = 2.5 > 1 implica inestabilidad)."}
 ggplot(res_mm1$queue_length, aes(x = time, y = n)) +
   geom_step(color = "#F44336", linewidth = 0.5) +
   labs(title = "M/M/1 — Longitud de cola en el tiempo",

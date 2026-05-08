@@ -16,7 +16,7 @@ La solución analítica es:
 
 $$S_t = S_0 \exp\!\left[(\mu - \frac{\sigma^2}{2})t + \sigma W_t\right]$$
 
-```{python gbm-sim, fig.cap="Figura 4.1.1: 1000 trayectorias GBM simuladas por esquema de Euler-Maruyama (izq) y distribución final vs log-normal teórica (der)."}
+```{python fig-4-1-1, fig.cap="1000 trayectorias GBM simuladas por esquema de Euler-Maruyama (izq) y distribución final vs log-normal teórica (der)."}
 mu    = 0.05
 sigma = 0.20
 S0    = 100.0

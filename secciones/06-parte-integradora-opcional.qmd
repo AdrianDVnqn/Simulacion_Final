@@ -108,7 +108,7 @@ cat(sprintf("Pacientes con biomarcador >= %d al atenderse: %d (%.1f%%)\n",
 cat(sprintf("Tiempo medio de espera: %.2f horas\n", mean(df_integrada$wait)))
 ```
 
-```{r integradora-plot, fig.cap="Figura 6.1.1: Parte integradora — Biomarcador al momento de atención vs tiempo de espera (línea roja: umbral clínico = 12)."}
+```{r fig-6-1-1, fig.cap="Parte integradora — Biomarcador al momento de atención vs tiempo de espera (línea roja: umbral clínico = 12)."}
 ggplot(df_integrada, aes(x = wait, y = biomarker, color = late)) +
   geom_point(alpha = 0.65, size = 1.6) +
   geom_hline(yintercept = threshold, linetype = "dashed", color = "red") +
