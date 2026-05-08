@@ -1,0 +1,91 @@
+\newpage
+
+# Parte 4 — Modelos Continuos
+
+> Se elige la **Opción C: SDE — Movimiento Browniano Geométrico (GBM)**
+
+## SDE — Geometric Brownian Motion
+
+La ecuación diferencial estocástica es:
+
+$$dS_t = \mu S_t\, dt + \sigma S_t\, dW_t$$
+
+con $\mu = 0.05$, $\sigma = 0.2$, $S_0 = 100$.
+
+La solución analítica es:
+
+$$S_t = S_0 \exp\!\left[(\mu - \frac{\sigma^2}{2})t + \sigma W_t\right]$$
+
+```{python gbm-sim, fig.cap="1000 trayectorias GBM simuladas por esquema de Euler-Maruyama."}
+mu    = 0.05
+sigma = 0.20
+S0    = 100.0
+T     = 1.0      # 1 año
+N_t   = 252      # pasos (días de trading)
+M     = 1000     # trayectorias
+
+dt   = T / N_t
+t    = np.linspace(0, T, N_t + 1)
+
+np.random.seed(42)
+Z = np.random.standard_normal((N_t, M))
+S = np.zeros((N_t + 1, M))
+S[0] = S0
+
+# Euler-Maruyama
+for i in range(N_t):
+    S[i+1] = S[i] * (1 + mu * dt + sigma * np.sqrt(dt) * Z[i])
+
+# ── Gráfico ──────────────────────────────────────────────────────────────────
+fig, axes = plt.subplots(1, 2, figsize=(13, 4))
+
+# Trayectorias individuales
+axes[0].plot(t, S[:, :100], linewidth=0.4, alpha=0.3, color='steelblue')
+axes[0].plot(t, S0 * np.exp(mu * t), 'r--', linewidth=2, label='Media teórica')
+axes[0].set_title("100 trayectorias GBM")
+axes[0].set_xlabel("Tiempo (años)")
+axes[0].set_ylabel("Precio $S_t$")
+axes[0].legend()
+
+# Distribución final vs log-normal teórica
+S_T = S[-1, :]
+axes[1].hist(S_T, bins=60, density=True, color='steelblue', alpha=0.6, label='Simulado')
+
+# Log-normal teórica
+from scipy.stats import lognorm
+mean_ln = np.log(S0) + (mu - 0.5 * sigma**2) * T
+std_ln  = sigma * np.sqrt(T)
+x_range = np.linspace(S_T.min(), S_T.max(), 300)
+axes[1].plot(x_range, lognorm.pdf(x_range, s=std_ln, scale=np.exp(mean_ln)),
+             'r-', linewidth=2, label='Log-normal teórica')
+axes[1].set_title("Distribución de $S_T$")
+axes[1].set_xlabel("$S_T$")
+axes[1].set_ylabel("Densidad")
+axes[1].legend()
+
+plt.tight_layout()
+plt.savefig("gbm.png", bbox_inches='tight')
+plt.show()
+```
+
+![GBM: trayectorias y distribución final](gbm.png){width=95%}
+
+```{python gbm-stats}
+# Comparación teórica vs simulada
+E_ST_teo = S0 * np.exp(mu * T)
+E_ST_sim = S_T.mean()
+
+Var_ST_teo = S0**2 * np.exp(2*mu*T) * (np.exp(sigma**2 * T) - 1)
+Var_ST_sim = S_T.var()
+
+print(f"E[S_T] teórico:   {E_ST_teo:.4f}")
+print(f"E[S_T] simulado:  {E_ST_sim:.4f}")
+print(f"Var[S_T] teórica:  {Var_ST_teo:.4f}")
+print(f"Var[S_T] simulada: {Var_ST_sim:.4f}")
+
+# Value at Risk 5%
+VaR_95 = np.percentile(S_T, 5)
+print(f"\nVaR 95% (percentil 5%): {VaR_95:.2f}")
+```
+
+**Discusión:** [Analizar convergencia al valor teórico y comportamiento de las trayectorias.]

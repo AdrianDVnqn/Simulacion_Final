@@ -1,0 +1,144 @@
+\newpage
+
+# Parte 1 — Generación de Números Pseudoaleatorios y Monte Carlo
+
+## 1.1 Implementación de un LCG
+
+El Generador Congruencial Lineal (LCG) sigue la recurrencia:
+
+$$X_{n+1} = (a \cdot X_n + c) \mod m, \quad U_n = X_n / m$$
+
+Se implementan **dos conjuntos de parámetros**: uno de calidad reconocida (glibc/ANSI C) y uno defectuoso (RANDU).
+
+### Implementación en R
+
+```{r lcg-impl-r}
+lcg <- function(n, seed = 42, a, c, m) {
+  x <- numeric(n)
+  x[1] <- (a * seed + c) %% m
+  for (i in 2:n) x[i] <- (a * x[i-1] + c) %% m
+  x / m
+}
+
+N <- 10000
+
+# Parámetros "buenos" — glibc / ANSI C
+u_good <- lcg(N, a = 1103515245, c = 12345, m = 2^31)
+
+# Parámetros "malos" — RANDU (IBM, falla espectral en 3D)
+u_bad  <- lcg(N, a = 65539, c = 0, m = 2^31)
+```
+
+### Implementación en Python
+
+```{python lcg-impl-py}
+def lcg(n, seed=42, a=1103515245, c=12345, m=2**31):
+    x = seed
+    seq = []
+    for _ in range(n):
+        x = (a * x + c) % m
+        seq.append(x / m)
+    return np.array(seq)
+
+N = 10_000
+u_good_py = lcg(N)
+u_bad_py  = lcg(N, a=65539, c=0, m=2**31)
+```
+
+### Histogramas comparativos
+
+```{r lcg-hist, fig.cap="Histogramas LCG bueno vs RANDU. Ambos parecen uniformes marginalmente."}
+df_hist <- data.frame(
+  valor = c(u_good, u_bad),
+  tipo  = rep(c("Bueno (glibc)", "RANDU"), each = N)
+)
+
+ggplot(df_hist, aes(x = valor, fill = tipo)) +
+  geom_histogram(bins = 50, color = "white", alpha = 0.8) +
+  facet_wrap(~tipo) +
+  labs(title = "Histogramas de los LCG", x = "Valor", y = "Frecuencia") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+### Gráfico de triples (u_i, u_{i+1}, u_{i+2})
+
+El gráfico de triples revela la estructura de hiperplanos característica del LCG defectuoso.
+
+```{python lcg-triples, fig.cap="Triples 3D: RANDU muestra estructura de planos (falla espectral)."}
+from mpl_toolkits.mplot3d import Axes3D
+
+fig = plt.figure(figsize=(12, 5))
+
+for idx, (u, label) in enumerate([(u_good_py, "Bueno (glibc)"), (u_bad_py, "RANDU")]):
+    ax = fig.add_subplot(1, 2, idx + 1, projection='3d')
+    ax.scatter(u[:-2], u[1:-1], u[2:], s=0.3, alpha=0.3)
+    ax.set_title(label)
+    ax.set_xlabel("u_i"); ax.set_ylabel("u_{i+1}"); ax.set_zlabel("u_{i+2}")
+
+plt.tight_layout()
+plt.savefig("lcg_triples.png", bbox_inches='tight')
+plt.show()
+```
+
+![Triples 3D generados en Python](lcg_triples.png){width=95%}
+
+### Runs Test
+
+```{r runs-test}
+# Prueba de rachas (runs test) sobre la mediana
+# Requiere el paquete 'randtests' o 'tseries'
+# install.packages("randtests")
+library(randtests)
+
+cat("=== Runs Test — LCG Bueno ===\n")
+print(runs.test(u_good))
+
+cat("\n=== Runs Test — RANDU ===\n")
+print(runs.test(u_bad))
+```
+
+**Discusión:** [Completar con los p-valores obtenidos. Un p-valor > 0.05 no rechaza la hipótesis de aleatoriedad.]
+
+---
+
+## 1.2 Estimación de π por Monte Carlo
+
+Se generan $N$ puntos uniformes en $[0,1]^2$ y se estima:
+
+$$\hat{\pi} \approx 4 \cdot \frac{\#\{x_i^2 + y_i^2 \le 1\}}{N}$$
+
+```{r pi-monte-carlo, fig.cap="Estimación de pi con Monte Carlo. La curva converge al valor real."}
+set.seed(42)
+N_pi <- 50000
+
+u1 <- runif(N_pi)
+u2 <- runif(N_pi)
+
+dentro    <- (u1^2 + u2^2) <= 1
+pi_est    <- 4 * cumsum(dentro) / seq_along(dentro)
+pi_final  <- tail(pi_est, 1)
+
+cat(sprintf("Estimación final de pi con N=%d: %.6f (error: %.6f)\n",
+            N_pi, pi_final, abs(pi_final - pi)))
+
+# Gráfico de convergencia
+df_pi <- data.frame(n = 1:N_pi, pi_est = pi_est)
+ggplot(df_pi[seq(1, N_pi, by = 50), ], aes(x = n, y = pi_est)) +
+  geom_line(color = "#2196F3", linewidth = 0.6) +
+  geom_hline(yintercept = pi, color = "red", linetype = "dashed") +
+  labs(title = "Convergencia de la estimación de π",
+       x = "Iteraciones", y = expression(hat(pi))) +
+  theme_minimal()
+```
+
+```{r pi-scatter, fig.cap="Scatter plot Monte Carlo para pi."}
+df_scatter <- data.frame(x = u1[1:3000], y = u2[1:3000], dentro = dentro[1:3000])
+ggplot(df_scatter, aes(x = x, y = y, color = dentro)) +
+  geom_point(size = 0.4, alpha = 0.6) +
+  scale_color_manual(values = c("FALSE" = "#E91E63", "TRUE" = "#4CAF50"),
+                     labels = c("Fuera", "Dentro")) +
+  coord_equal() +
+  labs(title = "Puntos Monte Carlo", color = "") +
+  theme_minimal()
+```

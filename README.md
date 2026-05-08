@@ -12,8 +12,8 @@ Repositorio del trabajo práctico integral de Simulación.
 
 ## Recomendación para Quarto
 
-- Mantener un archivo principal que arme el documento final.
-- Separar el contenido por partes en archivos más chicos si el trabajo crece.
+- Mantener `TP_Simulacion.qmd` como archivo principal que arma el documento final.
+- Separar el contenido por partes en archivos más chicos dentro de `secciones/`.
 - Evitar subir PDFs durante el desarrollo.
 - Compilar el PDF solo al final, cuando el texto esté cerrado.
 

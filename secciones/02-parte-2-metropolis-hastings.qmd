@@ -1,0 +1,123 @@
+\newpage
+
+# Parte 2 — Metropolis–Hastings y Bayesian Inference
+
+## 2.1 Posterior beta analítica
+
+Sea una moneda con $n = 10$ lanzamientos y $k = 7$ caras, con prior $\text{Beta}(1, 1)$ (uniforme).
+La posterior conjugada es:
+
+$$\theta \mid \text{datos} \sim \text{Beta}(\alpha + k,\ \beta + n - k) = \text{Beta}(8, 4)$$
+
+```{r posterior-analitica, fig.cap="Posterior analítica Beta(8,4)."}
+theta_grid <- seq(0, 1, length.out = 500)
+posterior  <- dbeta(theta_grid, 8, 4)
+
+ggplot(data.frame(theta = theta_grid, densidad = posterior),
+       aes(x = theta, y = densidad)) +
+  geom_line(color = "#9C27B0", linewidth = 1) +
+  geom_vline(xintercept = 8/12, color = "red", linetype = "dashed") +
+  labs(title = "Posterior analítica: Beta(8, 4)",
+       x = expression(theta), y = "Densidad") +
+  theme_minimal()
+```
+
+La media posterior es $\hat{\theta} = 8/12 \approx 0{.}667$.
+
+## 2.2 Implementación Metropolis–Hastings
+
+```{r mh-impl}
+mh <- function(n_iter = 5000, start = 0.5, prop_sd = 0.1, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  theta    <- numeric(n_iter)
+  theta[1] <- start
+  aceptados <- 0
+
+  for (t in 2:n_iter) {
+    prop <- rnorm(1, theta[t-1], prop_sd)
+
+    if (prop < 0 || prop > 1) {
+      theta[t] <- theta[t-1]
+    } else {
+      num   <- dbinom(7, 10, prop)      * dbeta(prop, 1, 1)
+      den   <- dbinom(7, 10, theta[t-1]) * dbeta(theta[t-1], 1, 1)
+      alpha <- min(1, num / den)
+
+      if (runif(1) < alpha) {
+        theta[t] <- prop
+        aceptados <- aceptados + 1
+      } else {
+        theta[t] <- theta[t-1]
+      }
+    }
+  }
+  list(chain = theta, tasa_aceptacion = aceptados / (n_iter - 1))
+}
+
+# Cadena principal
+res     <- mh(n_iter = 10000, seed = 42)
+cadena  <- res$chain
+burn_in <- 1000
+cadena_post_burnin <- cadena[(burn_in + 1):length(cadena)]
+
+cat(sprintf("Tasa de aceptación: %.2f%%\n", res$tasa_aceptacion * 100))
+```
+
+### Diagnósticos
+
+#### Traceplot
+
+```{r mh-traceplot, fig.cap="Traceplot de la cadena MH (con burn-in indicado)."}
+df_trace <- data.frame(iter = 1:length(cadena), theta = cadena)
+
+ggplot(df_trace, aes(x = iter, y = theta)) +
+  geom_line(color = "#607D8B", linewidth = 0.3, alpha = 0.8) +
+  geom_vline(xintercept = burn_in, color = "red", linetype = "dashed") +
+  labs(title = "Traceplot — Cadena MH",
+       x = "Iteración", y = expression(theta)) +
+  annotate("text", x = burn_in + 100, y = 0.05,
+           label = "Burn-in", color = "red", size = 3) +
+  theme_minimal()
+```
+
+#### Autocorrelación
+
+```{r mh-acf, fig.cap="Autocorrelación de la cadena post burn-in."}
+acf(cadena_post_burnin, main = "Autocorrelación — Cadena MH (post burn-in)",
+    col = "#2196F3", lag.max = 50)
+```
+
+#### Histograma vs Beta(8,4)
+
+```{r mh-hist, fig.cap="Histograma MH vs posterior analítica Beta(8,4)."}
+df_mh <- data.frame(theta = cadena_post_burnin)
+
+ggplot(df_mh, aes(x = theta)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 60,
+                 fill = "#03A9F4", color = "white", alpha = 0.7) +
+  stat_function(fun = \(x) dbeta(x, 8, 4),
+                color = "red", linewidth = 1.2, linetype = "dashed") +
+  labs(title = "MH muestral vs Beta(8,4) analítica",
+       x = expression(theta), y = "Densidad") +
+  theme_minimal()
+```
+
+#### R-hat y ESS con 4 cadenas
+
+```{r mh-rhat}
+# Generamos 4 cadenas con distintos puntos de inicio
+cadenas_4 <- lapply(1:4, function(i) {
+  mh(n_iter = 5000, start = runif(1), prop_sd = 0.1, seed = i * 10)$chain
+})
+
+# Convertir a objeto mcmc.list para coda
+mcmc_list <- mcmc.list(lapply(cadenas_4, \(c) mcmc(c)))
+
+cat("=== R-hat (Gelman-Rubin) ===\n")
+print(gelman.diag(mcmc_list))
+
+cat("\n=== ESS (Effective Sample Size) ===\n")
+print(effectiveSize(mcmc_list))
+```
+
+**Interpretación:** [Completar. R-hat < 1.05 indica convergencia. ESS > 400 es generalmente suficiente.]

@@ -1,0 +1,14 @@
+\newpage
+
+# Resumen de Resultados
+
+| Sección | Resultado clave | Comparación teórica |
+|---------|-----------------|---------------------|
+| LCG bueno | Runs test p > 0.05 | Pasa la prueba de aleatoriedad |
+| LCG RANDU | Estructura de planos en 3D | Falla espectral conocida |
+| Monte Carlo π | [completar valor] | π = 3.14159... |
+| MH — Media θ | [completar valor] | E[Beta(8,4)] = 0.667 |
+| MH — R-hat | [completar valor] | < 1.05 |
+| M/M/1 | ρ = 2.5 (inestable) | Sistema diverge sin c servidores |
+| GBM E[S_T] | [completar valor] | S₀·e^μ = 105.13 |
+| SSA — Media X | [completar valor] | k₁/k₂ = 10 |

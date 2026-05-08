@@ -151,6 +151,13 @@ window.Quarto = {
   <li><a href="#múltiples-trayectorias" id="toc-múltiples-trayectorias" class="nav-link" data-scroll-target="#múltiples-trayectorias">Múltiples trayectorias</a></li>
   </ul></li>
   </ul></li>
+  <li><a href="#parte-integradora-opcional" id="toc-parte-integradora-opcional" class="nav-link" data-scroll-target="#parte-integradora-opcional">Parte Integradora (Opcional)</a>
+  <ul class="collapse">
+  <li><a href="#pacientes-cola-y-biomarcador" id="toc-pacientes-cola-y-biomarcador" class="nav-link" data-scroll-target="#pacientes-cola-y-biomarcador">Pacientes, cola y biomarcador</a>
+  <ul class="collapse">
+  <li><a href="#supuestos" id="toc-supuestos" class="nav-link" data-scroll-target="#supuestos">Supuestos</a></li>
+  </ul></li>
+  </ul></li>
   <li><a href="#resumen-de-resultados" id="toc-resumen-de-resultados" class="nav-link" data-scroll-target="#resumen-de-resultados">Resumen de Resultados</a></li>
   <li><a href="#referencias" id="toc-referencias" class="nav-link" data-scroll-target="#referencias">Referencias</a></li>
   </ul>
@@ -172,7 +179,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Fecha de publicación</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2 de mayo de 2026</p>
+      <p class="date">8 de mayo de 2026</p>
     </div>
   </div>
   
@@ -799,7 +806,7 @@ Sistema estable (λ=3, μ=4): ρ=0.75</code></pre>
 <p><span class="math display">\[dS_t = \mu S_t\, dt + \sigma S_t\, dW_t\]</span></p>
 <p>con <span class="math inline">\(\mu = 0.05\)</span>, <span class="math inline">\(\sigma = 0.2\)</span>, <span class="math inline">\(S_0 = 100\)</span>.</p>
 <p>La solución analítica es:</p>
-<p><span class="math display">\[S_t = S_0 \exp\!\left[\left(\mu - \frac{\sigma^2}{2}\right)t + \sigma W_t\right]\]</span></p>
+<p><span class="math display">\[S_t = S_0 \exp\!\left[(\mu - \frac{\sigma^2}{2})t + \sigma W_t\right]\]</span></p>
 <div class="cell" data-layout-align="center">
 <details class="code-fold">
 <summary>Código</summary>
@@ -1073,6 +1080,160 @@ VaR 95% (percentil 5%): 74.27</code></pre>
 </div>
 </div>
 </div>
+<div style="page-break-after: always;"></div>
+</section>
+</section>
+</section>
+<section id="parte-integradora-opcional" class="level1">
+<h1>Parte Integradora (Opcional)</h1>
+<section id="pacientes-cola-y-biomarcador" class="level2">
+<h2 class="anchored" data-anchor-id="pacientes-cola-y-biomarcador">Pacientes, cola y biomarcador</h2>
+<p>Esta parte integra dos modelos ya usados en el trabajo:</p>
+<ul>
+<li>un proceso de llegadas tipo NHPP para pacientes,</li>
+<li>una cola M/M/1 para la atención,</li>
+<li>y una simulación de Gillespie para un biomarcador estocástico.</li>
+</ul>
+<p>La idea es medir qué proporción de pacientes llega a ser atendida después de que su biomarcador supera un umbral.</p>
+<section id="supuestos" class="level3">
+<h3 class="anchored" data-anchor-id="supuestos">Supuestos</h3>
+<ul>
+<li>Horizonte de simulación: 168 horas.</li>
+<li>Llegadas con tasa horaria no homogénea <span class="math inline">\(\lambda(t) = 5 + 3 \sin(2\pi t/24)\)</span>.</li>
+<li>Atención con servicio exponencial de tasa <span class="math inline">\(\mu = 4\)</span> pacientes/hora.</li>
+<li>Biomarcador modelado como un proceso nacimiento-muerte simple con Gillespie.</li>
+<li>Umbral clínico: 12 unidades.</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>nhpp_thinning <span class="ot">&lt;-</span> <span class="cf">function</span>(Tmax, lambda_fun, lambda_max, <span class="at">seed =</span> <span class="dv">42</span>) {</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>  t <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a>  arrivals <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
+<span id="cb68-5"><a href="#cb68-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-6"><a href="#cb68-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (<span class="cn">TRUE</span>) {</span>
+<span id="cb68-7"><a href="#cb68-7" aria-hidden="true" tabindex="-1"></a>    t <span class="ot">&lt;-</span> t <span class="sc">+</span> <span class="fu">rexp</span>(<span class="dv">1</span>, <span class="at">rate =</span> lambda_max)</span>
+<span id="cb68-8"><a href="#cb68-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (t <span class="sc">&gt;</span> Tmax) <span class="cf">break</span></span>
+<span id="cb68-9"><a href="#cb68-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">&lt;</span> <span class="fu">lambda_fun</span>(t) <span class="sc">/</span> lambda_max) arrivals <span class="ot">&lt;-</span> <span class="fu">c</span>(arrivals, t)</span>
+<span id="cb68-10"><a href="#cb68-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb68-11"><a href="#cb68-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-12"><a href="#cb68-12" aria-hidden="true" tabindex="-1"></a>  arrivals</span>
+<span id="cb68-13"><a href="#cb68-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb68-14"><a href="#cb68-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-15"><a href="#cb68-15" aria-hidden="true" tabindex="-1"></a>simulate_biomarker <span class="ot">&lt;-</span> <span class="cf">function</span>(Tmax, <span class="at">k1 =</span> <span class="dv">10</span>, <span class="at">k2 =</span> <span class="dv">1</span>, <span class="at">seed =</span> <span class="dv">42</span>) {</span>
+<span id="cb68-16"><a href="#cb68-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
+<span id="cb68-17"><a href="#cb68-17" aria-hidden="true" tabindex="-1"></a>  t  <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb68-18"><a href="#cb68-18" aria-hidden="true" tabindex="-1"></a>  X  <span class="ot">&lt;-</span> <span class="dv">0</span>L</span>
+<span id="cb68-19"><a href="#cb68-19" aria-hidden="true" tabindex="-1"></a>  ts <span class="ot">&lt;-</span> <span class="fu">c</span>(t)</span>
+<span id="cb68-20"><a href="#cb68-20" aria-hidden="true" tabindex="-1"></a>  xs <span class="ot">&lt;-</span> <span class="fu">c</span>(X)</span>
+<span id="cb68-21"><a href="#cb68-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-22"><a href="#cb68-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (t <span class="sc">&lt;</span> Tmax) {</span>
+<span id="cb68-23"><a href="#cb68-23" aria-hidden="true" tabindex="-1"></a>    a1 <span class="ot">&lt;-</span> k1</span>
+<span id="cb68-24"><a href="#cb68-24" aria-hidden="true" tabindex="-1"></a>    a2 <span class="ot">&lt;-</span> k2 <span class="sc">*</span> X</span>
+<span id="cb68-25"><a href="#cb68-25" aria-hidden="true" tabindex="-1"></a>    a0 <span class="ot">&lt;-</span> a1 <span class="sc">+</span> a2</span>
+<span id="cb68-26"><a href="#cb68-26" aria-hidden="true" tabindex="-1"></a>    tau <span class="ot">&lt;-</span> <span class="fu">rexp</span>(<span class="dv">1</span>, <span class="at">rate =</span> a0)</span>
+<span id="cb68-27"><a href="#cb68-27" aria-hidden="true" tabindex="-1"></a>    t <span class="ot">&lt;-</span> t <span class="sc">+</span> tau</span>
+<span id="cb68-28"><a href="#cb68-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (t <span class="sc">&gt;</span> Tmax) <span class="cf">break</span></span>
+<span id="cb68-29"><a href="#cb68-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">*</span> a0 <span class="sc">&lt;</span> a1) {</span>
+<span id="cb68-30"><a href="#cb68-30" aria-hidden="true" tabindex="-1"></a>      X <span class="ot">&lt;-</span> X <span class="sc">+</span> <span class="dv">1</span>L</span>
+<span id="cb68-31"><a href="#cb68-31" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb68-32"><a href="#cb68-32" aria-hidden="true" tabindex="-1"></a>      X <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="dv">0</span>L, X <span class="sc">-</span> <span class="dv">1</span>L)</span>
+<span id="cb68-33"><a href="#cb68-33" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb68-34"><a href="#cb68-34" aria-hidden="true" tabindex="-1"></a>    ts <span class="ot">&lt;-</span> <span class="fu">c</span>(ts, t)</span>
+<span id="cb68-35"><a href="#cb68-35" aria-hidden="true" tabindex="-1"></a>    xs <span class="ot">&lt;-</span> <span class="fu">c</span>(xs, X)</span>
+<span id="cb68-36"><a href="#cb68-36" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb68-37"><a href="#cb68-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-38"><a href="#cb68-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">time =</span> ts, <span class="at">X =</span> xs)</span>
+<span id="cb68-39"><a href="#cb68-39" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb68-40"><a href="#cb68-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-41"><a href="#cb68-41" aria-hidden="true" tabindex="-1"></a>sample_biomarker_at <span class="ot">&lt;-</span> <span class="cf">function</span>(path, t_query) {</span>
+<span id="cb68-42"><a href="#cb68-42" aria-hidden="true" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">findInterval</span>(t_query, path<span class="sc">$</span>time)</span>
+<span id="cb68-43"><a href="#cb68-43" aria-hidden="true" tabindex="-1"></a>  path<span class="sc">$</span>X[<span class="fu">pmax</span>(<span class="dv">1</span>, idx)]</span>
+<span id="cb68-44"><a href="#cb68-44" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>lambda_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(t) <span class="dv">5</span> <span class="sc">+</span> <span class="dv">3</span> <span class="sc">*</span> <span class="fu">sin</span>(<span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> t <span class="sc">/</span> <span class="dv">24</span>)</span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>lambda_max <span class="ot">&lt;-</span> <span class="dv">8</span></span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>Tmax <span class="ot">&lt;-</span> <span class="dv">168</span></span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>mu_service <span class="ot">&lt;-</span> <span class="dv">4</span></span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>threshold <span class="ot">&lt;-</span> <span class="dv">12</span></span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb69-8"><a href="#cb69-8" aria-hidden="true" tabindex="-1"></a>arrival_times <span class="ot">&lt;-</span> <span class="fu">nhpp_thinning</span>(Tmax, lambda_fun, lambda_max, <span class="at">seed =</span> <span class="dv">42</span>)</span>
+<span id="cb69-9"><a href="#cb69-9" aria-hidden="true" tabindex="-1"></a>biomarker_path <span class="ot">&lt;-</span> <span class="fu">simulate_biomarker</span>(<span class="at">Tmax =</span> Tmax, <span class="at">k1 =</span> <span class="dv">10</span>, <span class="at">k2 =</span> <span class="dv">1</span>, <span class="at">seed =</span> <span class="dv">99</span>)</span>
+<span id="cb69-10"><a href="#cb69-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-11"><a href="#cb69-11" aria-hidden="true" tabindex="-1"></a>service_start <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(arrival_times))</span>
+<span id="cb69-12"><a href="#cb69-12" aria-hidden="true" tabindex="-1"></a>service_end <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(arrival_times))</span>
+<span id="cb69-13"><a href="#cb69-13" aria-hidden="true" tabindex="-1"></a>waiting_time <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(arrival_times))</span>
+<span id="cb69-14"><a href="#cb69-14" aria-hidden="true" tabindex="-1"></a>biomarker_at_service <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(arrival_times))</span>
+<span id="cb69-15"><a href="#cb69-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-16"><a href="#cb69-16" aria-hidden="true" tabindex="-1"></a>prev_end <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb69-17"><a href="#cb69-17" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(arrival_times)) {</span>
+<span id="cb69-18"><a href="#cb69-18" aria-hidden="true" tabindex="-1"></a>  service_start[i] <span class="ot">&lt;-</span> <span class="fu">max</span>(arrival_times[i], prev_end)</span>
+<span id="cb69-19"><a href="#cb69-19" aria-hidden="true" tabindex="-1"></a>  waiting_time[i] <span class="ot">&lt;-</span> service_start[i] <span class="sc">-</span> arrival_times[i]</span>
+<span id="cb69-20"><a href="#cb69-20" aria-hidden="true" tabindex="-1"></a>  service_end[i] <span class="ot">&lt;-</span> service_start[i] <span class="sc">+</span> <span class="fu">rexp</span>(<span class="dv">1</span>, <span class="at">rate =</span> mu_service)</span>
+<span id="cb69-21"><a href="#cb69-21" aria-hidden="true" tabindex="-1"></a>  biomarker_at_service[i] <span class="ot">&lt;-</span> <span class="fu">sample_biomarker_at</span>(biomarker_path, service_start[i])</span>
+<span id="cb69-22"><a href="#cb69-22" aria-hidden="true" tabindex="-1"></a>  prev_end <span class="ot">&lt;-</span> service_end[i]</span>
+<span id="cb69-23"><a href="#cb69-23" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb69-24"><a href="#cb69-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-25"><a href="#cb69-25" aria-hidden="true" tabindex="-1"></a>df_integrada <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb69-26"><a href="#cb69-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">arrival =</span> arrival_times,</span>
+<span id="cb69-27"><a href="#cb69-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">wait =</span> waiting_time,</span>
+<span id="cb69-28"><a href="#cb69-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">biomarker =</span> biomarker_at_service,</span>
+<span id="cb69-29"><a href="#cb69-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">late =</span> biomarker_at_service <span class="sc">&gt;=</span> threshold</span>
+<span id="cb69-30"><a href="#cb69-30" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb69-31"><a href="#cb69-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-32"><a href="#cb69-32" aria-hidden="true" tabindex="-1"></a>prop_late <span class="ot">&lt;-</span> <span class="fu">mean</span>(df_integrada<span class="sc">$</span>late)</span>
+<span id="cb69-33"><a href="#cb69-33" aria-hidden="true" tabindex="-1"></a>late_arrivals <span class="ot">&lt;-</span> <span class="fu">sum</span>(df_integrada<span class="sc">$</span>late)</span>
+<span id="cb69-34"><a href="#cb69-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-35"><a href="#cb69-35" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Pacientes simulados: %d</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">nrow</span>(df_integrada)))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Pacientes simulados: 795</code></pre>
+</div>
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Pacientes con biomarcador &gt;= %d al atenderse: %d (%.1f%%)</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>            threshold, late_arrivals, <span class="dv">100</span> <span class="sc">*</span> prop_late))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Pacientes con biomarcador &gt;= 12 al atenderse: 387 (48.7%)</code></pre>
+</div>
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Tiempo medio de espera: %.2f horas</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">mean</span>(df_integrada<span class="sc">$</span>wait)))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Tiempo medio de espera: 20.09 horas</code></pre>
+</div>
+</div>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_integrada, <span class="fu">aes</span>(<span class="at">x =</span> wait, <span class="at">y =</span> biomarker, <span class="at">color =</span> late)) <span class="sc">+</span></span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.65</span>, <span class="at">size =</span> <span class="fl">1.6</span>) <span class="sc">+</span></span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> threshold, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"#009688"</span>, <span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"#F44336"</span>)) <span class="sc">+</span></span>
+<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Integradora: espera vs biomarcador"</span>,</span>
+<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Tiempo de espera (horas)"</span>,</span>
+<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Biomarcador al ser atendido"</span>,</span>
+<span id="cb75-8"><a href="#cb75-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Supera umbral"</span>) <span class="sc">+</span></span>
+<span id="cb75-9"><a href="#cb75-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="TP_Simulacion_files/figure-html/integradora-plot-1.png" class="img-fluid figure-img" width="672"></p>
+<figcaption>Parte integradora: biomarcador al momento de atención vs tiempo de espera.</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Discusión sugerida:</strong> comparar cómo el aumento del tiempo de espera cambia la proporción de pacientes que superan el umbral antes de ser atendidos, y discutir si la política de atención o la intensidad de llegadas hace más frecuente ese evento.</p>
 <div style="page-break-after: always;"></div>
 </section>
 </section>

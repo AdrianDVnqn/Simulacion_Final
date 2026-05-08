@@ -1,0 +1,13 @@
+\newpage
+
+# Introducción
+
+Este trabajo integra los contenidos de las cinco unidades de la materia:
+
+- **Unidad I** – Generación de números pseudoaleatorios y Monte Carlo  
+- **Unidad II** – Bayes, cadenas de Markov y Metropolis–Hastings  
+- **Unidad III** – Simulación de eventos discretos  
+- **Unidad IV** – Procesos continuos (NHPP, CTMC, SDE)  
+- **Unidad V** – Reacciones estocásticas: Gillespie SSA  
+
+Todas las semillas están fijadas para reproducibilidad (`set.seed(42)` en R, `np.random.seed(42)` en Python).

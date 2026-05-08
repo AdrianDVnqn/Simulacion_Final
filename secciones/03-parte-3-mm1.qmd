@@ -1,0 +1,83 @@
+\newpage
+
+# Parte 3 — Simulación de Eventos Discretos (M/M/1)
+
+El sistema tiene:
+
+- Llegadas Poisson: $\lambda = 10$ clientes/hora  
+- Servicio exponencial: $\mu = 4$ clientes/hora  
+- Tiempo de simulación: $T_{max} = 8$ horas  
+
+La tasa de utilización teórica es $\rho = \lambda/\mu = 2.5 > 1$, por lo que el sistema **no es estable** con un solo servidor (cola crece indefinidamente). Se puede extender a $c$ servidores para estabilizarlo.
+
+> **Nota:** Con $c = 3$ servidores, $\rho/c = 2.5/3 \approx 0.83 < 1$, el sistema es estable.
+
+```{r mm1-sim}
+simulate_mm1 <- function(lambda, mu, T_max, seed = 42) {
+  set.seed(seed)
+  t        <- 0
+  n        <- 0        # clientes en el sistema
+  t_arr    <- rexp(1, lambda)
+  t_dep    <- Inf
+  arrivals <- departures <- 0
+  wait_times   <- c()
+  queue_length <- data.frame(time = 0, n = 0)
+
+  while (t < T_max) {
+    if (t_arr < t_dep) {
+      t      <- t_arr
+      n      <- n + 1
+      arrivals <- arrivals + 1
+      if (n == 1) t_dep <- t + rexp(1, mu)
+      t_arr  <- t + rexp(1, lambda)
+    } else {
+      t      <- t_dep
+      n      <- n - 1
+      departures <- departures + 1
+      wait_times <- c(wait_times, t)
+      t_dep  <- if (n > 0) t + rexp(1, mu) else Inf
+    }
+    queue_length <- rbind(queue_length, data.frame(time = t, n = n))
+  }
+
+  list(
+    arrivals   = arrivals,
+    departures = departures,
+    wait_times = wait_times,
+    queue_length = queue_length,
+    rho        = lambda / mu
+  )
+}
+
+res_mm1 <- simulate_mm1(lambda = 10, mu = 4, T_max = 8)
+
+cat(sprintf("Llegadas:    %d\n", res_mm1$arrivals))
+cat(sprintf("Salidas:     %d\n", res_mm1$departures))
+cat(sprintf("En sistema:  %d (cola acumulada por ρ > 1)\n",
+            res_mm1$arrivals - res_mm1$departures))
+```
+
+```{r mm1-plot, fig.cap="Longitud de la cola M/M/1 a lo largo del tiempo (8 horas)."}
+ggplot(res_mm1$queue_length, aes(x = time, y = n)) +
+  geom_step(color = "#F44336", linewidth = 0.5) +
+  labs(title = "M/M/1 — Longitud de cola en el tiempo",
+       x = "Tiempo (horas)", y = "Clientes en el sistema") +
+  theme_minimal()
+```
+
+**Comparación teórica vs simulada:**
+
+```{r mm1-teoria}
+# Con rho > 1 el sistema es inestable; mostramos la tasa de utilización
+cat(sprintf("ρ = λ/μ = %.2f  →  Sistema %s\n",
+            res_mm1$rho,
+            ifelse(res_mm1$rho < 1, "ESTABLE", "INESTABLE (ρ > 1)")))
+
+# Si quisieras un sistema estable: lambda=3, mu=4 → rho=0.75
+res_estable <- simulate_mm1(lambda = 3, mu = 4, T_max = 8)
+rho_s <- 3 / 4
+cat(sprintf("\nSistema estable (λ=3, μ=4): ρ=%.2f\n", rho_s))
+cat(sprintf("  Lq teórico  = ρ²/(1-ρ) = %.4f\n", rho_s^2 / (1 - rho_s)))
+cat(sprintf("  L  teórico  = ρ/(1-ρ)  = %.4f\n", rho_s / (1 - rho_s)))
+cat(sprintf("  Wq teórico  = λ×Lq/λ²  = %.4f h\n", rho_s / (4 * (1 - rho_s))))
+```

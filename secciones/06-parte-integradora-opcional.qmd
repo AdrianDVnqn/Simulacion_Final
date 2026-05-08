@@ -1,0 +1,123 @@
+\newpage
+
+# Parte Integradora (Opcional)
+
+## Pacientes, cola y biomarcador
+
+Esta parte integra dos modelos ya usados en el trabajo:
+
+- un proceso de llegadas tipo NHPP para pacientes,
+- una cola M/M/1 para la atención,
+- y una simulación de Gillespie para un biomarcador estocástico.
+
+La idea es medir qué proporción de pacientes llega a ser atendida después de que su biomarcador supera un umbral.
+
+### Supuestos
+
+- Horizonte de simulación: 168 horas.
+- Llegadas con tasa horaria no homogénea $\lambda(t) = 5 + 3 \sin(2\pi t/24)$.
+- Atención con servicio exponencial de tasa $\mu = 4$ pacientes/hora.
+- Biomarcador modelado como un proceso nacimiento-muerte simple con Gillespie.
+- Umbral clínico: 12 unidades.
+
+```{r integradora-helpers}
+nhpp_thinning <- function(Tmax, lambda_fun, lambda_max, seed = 42) {
+  set.seed(seed)
+  t <- 0
+  arrivals <- c()
+
+  while (TRUE) {
+    t <- t + rexp(1, rate = lambda_max)
+    if (t > Tmax) break
+    if (runif(1) < lambda_fun(t) / lambda_max) arrivals <- c(arrivals, t)
+  }
+
+  arrivals
+}
+
+simulate_biomarker <- function(Tmax, k1 = 10, k2 = 1, seed = 42) {
+  set.seed(seed)
+  t  <- 0
+  X  <- 0L
+  ts <- c(t)
+  xs <- c(X)
+
+  while (t < Tmax) {
+    a1 <- k1
+    a2 <- k2 * X
+    a0 <- a1 + a2
+    tau <- rexp(1, rate = a0)
+    t <- t + tau
+    if (t > Tmax) break
+    if (runif(1) * a0 < a1) {
+      X <- X + 1L
+    } else {
+      X <- max(0L, X - 1L)
+    }
+    ts <- c(ts, t)
+    xs <- c(xs, X)
+  }
+
+  data.frame(time = ts, X = xs)
+}
+
+sample_biomarker_at <- function(path, t_query) {
+  idx <- findInterval(t_query, path$time)
+  path$X[pmax(1, idx)]
+}
+```
+
+```{r integradora-sim}
+lambda_fun <- function(t) 5 + 3 * sin(2 * pi * t / 24)
+lambda_max <- 8
+Tmax <- 168
+mu_service <- 4
+threshold <- 12
+
+set.seed(42)
+arrival_times <- nhpp_thinning(Tmax, lambda_fun, lambda_max, seed = 42)
+biomarker_path <- simulate_biomarker(Tmax = Tmax, k1 = 10, k2 = 1, seed = 99)
+
+service_start <- numeric(length(arrival_times))
+service_end <- numeric(length(arrival_times))
+waiting_time <- numeric(length(arrival_times))
+biomarker_at_service <- numeric(length(arrival_times))
+
+prev_end <- 0
+for (i in seq_along(arrival_times)) {
+  service_start[i] <- max(arrival_times[i], prev_end)
+  waiting_time[i] <- service_start[i] - arrival_times[i]
+  service_end[i] <- service_start[i] + rexp(1, rate = mu_service)
+  biomarker_at_service[i] <- sample_biomarker_at(biomarker_path, service_start[i])
+  prev_end <- service_end[i]
+}
+
+df_integrada <- data.frame(
+  arrival = arrival_times,
+  wait = waiting_time,
+  biomarker = biomarker_at_service,
+  late = biomarker_at_service >= threshold
+)
+
+prop_late <- mean(df_integrada$late)
+late_arrivals <- sum(df_integrada$late)
+
+cat(sprintf("Pacientes simulados: %d\n", nrow(df_integrada)))
+cat(sprintf("Pacientes con biomarcador >= %d al atenderse: %d (%.1f%%)\n",
+            threshold, late_arrivals, 100 * prop_late))
+cat(sprintf("Tiempo medio de espera: %.2f horas\n", mean(df_integrada$wait)))
+```
+
+```{r integradora-plot, fig.cap="Parte integradora: biomarcador al momento de atención vs tiempo de espera."}
+ggplot(df_integrada, aes(x = wait, y = biomarker, color = late)) +
+  geom_point(alpha = 0.65, size = 1.6) +
+  geom_hline(yintercept = threshold, linetype = "dashed", color = "red") +
+  scale_color_manual(values = c("FALSE" = "#009688", "TRUE" = "#F44336")) +
+  labs(title = "Integradora: espera vs biomarcador",
+       x = "Tiempo de espera (horas)",
+       y = "Biomarcador al ser atendido",
+       color = "Supera umbral") +
+  theme_minimal()
+```
+
+**Discusión sugerida:** comparar cómo el aumento del tiempo de espera cambia la proporción de pacientes que superan el umbral antes de ser atendidos, y discutir si la política de atención o la intensidad de llegadas hace más frecuente ese evento.
