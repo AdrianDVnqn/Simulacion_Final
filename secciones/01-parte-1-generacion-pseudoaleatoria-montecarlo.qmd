@@ -2,17 +2,83 @@
 
 # Parte 1 — Generación de Números Pseudoaleatorios y Monte Carlo
 
+
+
+```{r setup, include=FALSE}
+library(reticulate)
+library(ggplot2)
+library(randtests)
+# Obtén la ruta absoluta correcta
+python_path <- Sys.which("python")  # Si el .venv está activado
+use_python(python_path)
+```
+
 ## 1.1 Implementación de un LCG
 
-El Generador Congruencial Lineal (LCG) sigue la recurrencia:
+El Generador Congruencial Lineal (LCG) es un método para generar una secuencia de números pseudoaleatorios.  
+Podemos definirlo mediante la siguiente fórmula
 
-$$X_{n+1} = (a \cdot X_n + c) \mod m, \quad U_n = X_n / m$$
+$$X_{n+1} = (a \cdot X_n + c) \mod m $$
 
-Se implementan **dos conjuntos de parámetros**: uno de calidad reconocida (glibc/ANSI C) y uno defectuoso (RANDU).
+donde:
+
+- a: multiplicador
+- c: incremento
+- m: módulo
+- X_0:  es la semilla inicial
+
+A continuación se generan  **dos conjuntos**: uno considerado "bueno"   y uno considerado "malo" (RANDU).
 
 ### Implementación en R
 
-```{r lcg-impl-r}
+
+
+```{r lcg-r1}
+
+
+# Parámetros del generador lineal congruencial (LCG)
+a <- 15809
+c <- 3
+m <- 2147483647
+n <- 1e6
+
+
+x <- numeric(n)
+x[1] <- 12345  # semilla
+
+# Generar números pseudoaleatorios
+for (i in 2:n) {
+  x[i] <- (a * x[i - 1] + c) %% m
+}
+
+# Normalizar al rango [0,1]
+u <- x / m
+
+# Prueba de corridas (runs test)
+resultado <- runs.test(u)
+
+```
+```{r lcg-r2 , include=FALSE }
+#Extraer el p-value
+p_value <- resultado$p.value
+
+interpretar_aleatoriedad <- function(p_value, nivel_sig = 0.05) {
+  p_value_redondeado <- round(p_value, 3)
+  
+  if (p_value < nivel_sig) {
+    resultado <- paste0("p-value = ", p_value_redondeado, " (Se rechaza la hipótesis de aleatoriedad)")
+  } else {
+    resultado <- paste0("p-value = ", p_value_redondeado, " (No se rechaza la hipótesis de aleatoriedad)")
+  }
+  return(resultado)
+}
+```
+En el código anterior se implementa un LCG con parámetros específicos y se realiza una prueba de corridas (runs test) para evaluar la aleatoriedad de la secuencia generada. El resultado se interpreta en función del p-value obtenido.
+En este caso indica que `r interpretar_aleatoriedad(resultado$p.value)`
+
+
+
+```{r lcg-Randu}
 lcg <- function(n, seed = 42, a, c, m) {
   x <- numeric(n)
   x[1] <- (a * seed + c) %% m
@@ -20,37 +86,30 @@ lcg <- function(n, seed = 42, a, c, m) {
   x / m
 }
 
-N <- 10000
+N <- 100000
 
 # Parámetros "buenos" — glibc / ANSI C
-u_good <- lcg(N, a = 1103515245, c = 12345, m = 2^31)
+parametros_buenos <- lcg(N, a = 1103515245, c = 12345, m = 2^31)
 
 # Parámetros "malos" — RANDU (IBM, falla espectral en 3D)
-u_bad  <- lcg(N, a = 65539, c = 0, m = 2^31)
+parametros_malos <- lcg(N, a = 65539, c = 0, m = 2^31)
+
+u_alternativo <- lcg(N, a = 15809, c = 3, m = 2147483647)
+
+print(runs.test(parametros_buenos)) 
+print(runs.test(parametros_malos))
+print(runs.test(u_alternativo))
+
 ```
 
-### Implementación en Python
 
-```{python lcg-impl-py}
-def lcg(n, seed=42, a=1103515245, c=12345, m=2**31):
-    x = seed
-    seq = []
-    for _ in range(n):
-        x = (a * x + c) % m
-        seq.append(x / m)
-    return np.array(seq)
-
-N = 10_000
-u_good_py = lcg(N)
-u_bad_py  = lcg(N, a=65539, c=0, m=2**31)
-```
 
 ### Histogramas comparativos
 
-```{r lcg-hist, fig.cap="Histogramas LCG bueno vs RANDU. Ambos parecen uniformes marginalmente."}
+```{r lcg-hist, fig.cap="Histogramas LCG bueno vs RANDU"}
 df_hist <- data.frame(
-  valor = c(u_good, u_bad),
-  tipo  = rep(c("Bueno (glibc)", "RANDU"), each = N)
+  valor = c(parametros_buenos, parametros_malos),
+  tipo  = rep(c("Bueno", "RANDU"), each = N)
 )
 
 ggplot(df_hist, aes(x = valor, fill = tipo)) +
@@ -61,16 +120,17 @@ ggplot(df_hist, aes(x = valor, fill = tipo)) +
   theme(legend.position = "none")
 ```
 
-### Gráfico de triples (u_i, u_{i+1}, u_{i+2})
+### Gráfico de tripletes (u_i, u_{i+1}, u_{i+2})
 
-El gráfico de triples revela la estructura de hiperplanos característica del LCG defectuoso.
+El gráfico de tripletes revela la estructura de hiperplanos característica del LCG defectuoso.
 
 ```{python lcg-triples, fig.cap="Triples 3D: RANDU muestra estructura de planos (falla espectral)."}
+import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 fig = plt.figure(figsize=(12, 5))
 
-for idx, (u, label) in enumerate([(u_good_py, "Bueno (glibc)"), (u_bad_py, "RANDU")]):
+for idx, (u, label) in enumerate([(parametros_buenos, "Bueno"), (parametros_malos, "RANDU")]):
     ax = fig.add_subplot(1, 2, idx + 1, projection='3d')
     ax.scatter(u[:-2], u[1:-1], u[2:], s=0.3, alpha=0.3)
     ax.set_title(label)
