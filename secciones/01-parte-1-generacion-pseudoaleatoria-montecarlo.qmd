@@ -2,7 +2,7 @@
 
 # Parte 1 — Generación de Números Pseudoaleatorios y Monte Carlo
 
-## 1.1 Implementación de un LCG
+## Implementación de un LCG
 
 El Generador Congruencial Lineal (LCG) sigue la recurrencia:
 

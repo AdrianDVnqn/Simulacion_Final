@@ -30,7 +30,7 @@ Repositorio del trabajo práctico integral de Simulación.
 6. Guardar los cambios con commits chicos y claros.
 7. Subir la rama con `git push -u origin nombre-de-rama`.
 8. Abrir Pull Request hacia `main`.
-9. No mezclar dos secciones distintas en la misma rama salvo que sea integración final.
+9. No mezclar dos secciones distintas en la misma rama salvo que sea la rama 'integración-final'.
 
 ## Comandos básicos para no perderse
 

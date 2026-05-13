@@ -2,12 +2,29 @@
 
 # Introducción
 
-Este trabajo integra los contenidos de las cinco unidades de la materia:
+Este trabajo integra y aplica los principales contenidos de la materia *Simulación y Optimización en Ciencia de Datos* a través de ejemplos implementados en R y Python. Las unidades cubiertas son:
 
-- **Unidad I** – Generación de números pseudoaleatorios y Monte Carlo  
-- **Unidad II** – Bayes, cadenas de Markov y Metropolis–Hastings  
-- **Unidad III** – Simulación de eventos discretos  
-- **Unidad IV** – Procesos continuos (NHPP, CTMC, SDE)  
-- **Unidad V** – Reacciones estocásticas: Gillespie SSA  
+- Unidad I — Generación de números pseudoaleatorios y Monte Carlo
+- Unidad II — Bayes, cadenas de Markov y Metropolis–Hastings
+- Unidad III — Simulación de eventos discretos
+- Unidad IV — Procesos continuos (NHPP, CTMC, SDE)
+- Unidad V — Reacciones estocásticas: Gillespie SSA
+- Unidad VI — Integración aplicada: modelos acoplados para llegadas y atención con observables estocásticos
 
-Todas las semillas están fijadas para reproducibilidad (`set.seed(42)` en R, `np.random.seed(42)` en Python).
+La materia se cursó en los meses de marzo a mayo de 2026; el trabajo se realizó en mayo de 2026.
+
+Propósitos del trabajo:
+
+- Presentar implementaciones reproducibles de los métodos vistos en clase.
+- Comparar resultados simulados frente a predicciones o propiedades teóricas cuando sea posible.
+- Interpretar el comportamiento del modelo y discutir limitaciones prácticas.
+
+Alcance y metodología:
+
+- Cada sección contiene la formulación del problema, la implementación (código comentado), experimentos numéricos y visualizaciones relevantes.
+- Empleamos simulación estocástica (Monte Carlo, algoritmos de eventos discretos, Euler–Maruyama para SDE y Gillespie para reacciones químicas) y técnicas de diagnóstico cuando aplica.
+- Se favorece la reproducibilidad: todas las semillas están fijadas (`set.seed(42)` en R, `np.random.seed(42)` en Python) y las dependencias principales se instalan desde los bloques `setup` si faltan.
+
+Herramientas y formato:
+
+- Código en R y Python integrado en el documento Quarto. Las figuras se generan automáticamente durante la compilación y los resultados numéricos se muestran en bloques de salida.

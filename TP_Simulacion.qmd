@@ -1,19 +1,17 @@
 ---
-title: "Trabajo Práctico Integral — Simulación"
-subtitle: "Maestría en Ciencia de Datos · Simulación y Optimización"
-date: today
 lang: es
 format:
   pdf:
     title-block: false
-    toc: true
-    toc-depth: 3
+    toc: false
     number-sections: true
-    fig-pos: "H"
-    fig-width: 7
-    fig-height: 4
-    colorlinks: true
     geometry: margin=2.5cm
+    include-in-header:
+      text: |
+        \usepackage[utf8]{inputenc}
+        \usepackage{xcolor}
+        % Definición del azul institucional proporcionado
+        \definecolor{australblue}{HTML}{1924AD} 
   html:
     title-block: false
     toc: true
@@ -30,20 +28,55 @@ knitr:
     fig.align: "center"
 ---
 
-# Trabajo Práctico Integral — Simulación
+\begin{titlepage}
+    \centering
+    
+    % Logo con margen superior
+    \vspace*{0.6cm}
+    \includegraphics[width=0.5\textwidth]{austral.jpg}\par
+    {\LARGE \text{Maestría en Ciencia de Datos}\par}
+    \vspace{1 cm}
+    {\LARGE \textbf{SIMULACIÓN Y OPTIMIZACIÓN}\par}
+    {\LARGE \textbf{EN CIENCIA DE DATOS}\par}
+    \vspace{0.6cm}
+    {\huge \textbf{Trabajo Práctico Integral}\par}
+    \vspace{0.5cm}
 
-## Maestría en Ciencia de Datos · Simulación y Optimización
+    
+    \vspace{2.5cm}
 
-### Integrantes:
+    % Distribución de participantes
+    \begin{minipage}[t]{0.45\textwidth}
+        \flushleft
+        {\large \color{australblue}\textbf{Profesores}} \\
+        \vspace{0.3cm}
+        Rodrigo del Rosso \\
+        Ezequiel Nuske
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \flushright
+        {\large \color{australblue}\textbf{Alumnos}} \\
+        \vspace{0.3cm}
+        Sebastián Ayala Sosa \\
+        Adrian Della Valentina \\
+        Gloria Molina Pico \\
+        José Roa Ramírez
+    \end{minipage}
 
-Sebastián Ayala Sosa  
-Adrian Della Valentina  
-Gloria Molina Pico  
-José Roa Ramírez
+    \vfill
+    
+    % Pie de página con fecha
+    {\large 19 de mayo de 2026}\par
+    \vspace{0.2cm}
+    {\color{australblue}\hrule height 1pt}
+    
+\end{titlepage}
 
-Grupo de estudio
-
-2 de mayo de 2026
+```{=latex}
+\tableofcontents
+\newpage
+```
 
 ```{r setup-r, include=FALSE}
 # ── Librerías R ──────────────────────────────────────────────────────────────

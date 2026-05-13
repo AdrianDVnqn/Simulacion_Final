@@ -6,6 +6,16 @@
 
 ## SDE — Geometric Brownian Motion
 
+En esta sección trabajamos con el **Movimiento Browniano Geométrico (GBM)**, uno de los modelos continuos más usados para describir la evolución de precios de activos, tasas de crecimiento poblacional o cualquier magnitud que sea estrictamente positiva y tenga variaciones proporcionales a su propio nivel.
+
+La idea central del GBM es combinar una tendencia media de crecimiento o decrecimiento con una fuente de aleatoriedad que se acumula en el tiempo. Eso produce trayectorias suaves, pero no deterministas, y una distribución final asimétrica, típicamente log-normal.
+
+Desde el punto de vista de simulación, este modelo es útil porque permite contrastar:
+
+- el comportamiento de trayectorias individuales frente a la media teórica,
+- la forma de la distribución simulada al final del horizonte,
+- y la diferencia entre una descripción puntual del proceso y su comportamiento agregado.
+
 La ecuación diferencial estocástica es:
 
 $$dS_t = \mu S_t\, dt + \sigma S_t\, dW_t$$
@@ -16,7 +26,14 @@ La solución analítica es:
 
 $$S_t = S_0 \exp\!\left[(\mu - \frac{\sigma^2}{2})t + \sigma W_t\right]$$
 
-```{python fig-4-1-1, fig.cap="1000 trayectorias GBM simuladas por esquema de Euler-Maruyama (izq) y distribución final vs log-normal teórica (der)."}
+```{python fig-4-1-1, fig.cap="Trayectorias del Movimiento Browniano Geométrico simuladas con Euler-Maruyama."}
+# Dependencias necesarias para esta simulación.
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parámetros del GBM.
+# μ controla la deriva promedio del proceso, σ mide la intensidad de la volatilidad
+# y S0 fija el nivel inicial desde el que parten todas las trayectorias.
 mu    = 0.05
 sigma = 0.20
 S0    = 100.0
@@ -24,54 +41,66 @@ T     = 1.0      # 1 año
 N_t   = 252      # pasos (días de trading)
 M     = 1000     # trayectorias
 
+# Paso temporal y grilla de tiempo para la simulación.
 dt   = T / N_t
 t    = np.linspace(0, T, N_t + 1)
 
+# Generamos innovaciones gaussianas independientes para cada paso y trayectoria.
 np.random.seed(42)
 Z = np.random.standard_normal((N_t, M))
 S = np.zeros((N_t + 1, M))
 S[0] = S0
 
-# Euler-Maruyama
+# Esquema de Euler-Maruyama:
+# actualiza el nivel del activo multiplicando por el término determinista
+# y por el choque estocástico escalado por sqrt(dt).
 for i in range(N_t):
     S[i+1] = S[i] * (1 + mu * dt + sigma * np.sqrt(dt) * Z[i])
 
-# ── Gráfico ──────────────────────────────────────────────────────────────────
-fig, axes = plt.subplots(1, 2, figsize=(13, 4))
+# ── Gráfico 1: trayectorias ──────────────────────────────────────────────────
+fig, ax = plt.subplots(figsize=(7, 4))
 
-# Trayectorias individuales
-axes[0].plot(t, S[:, :100], linewidth=0.4, alpha=0.3, color='steelblue')
-axes[0].plot(t, S0 * np.exp(mu * t), 'r--', linewidth=2, label='Media teórica')
-axes[0].set_title("100 trayectorias GBM")
-axes[0].set_xlabel("Tiempo (años)")
-axes[0].set_ylabel("Precio $S_t$")
-axes[0].legend()
+# Trayectorias individuales: se muestran solo 100 para no saturar la figura.
+ax.plot(t, S[:, :100], linewidth=0.4, alpha=0.3, color='steelblue')
 
-# Distribución final vs log-normal teórica
+# Media teórica del GBM: E[S_t] = S0 e^{μt}.
+ax.plot(t, S0 * np.exp(mu * t), 'r--', linewidth=2, label='Media teórica')
+ax.set_title("Trayectorias del GBM")
+ax.set_xlabel("Tiempo (años)")
+ax.set_ylabel("Precio $S_t$")
+ax.legend()
+
+plt.tight_layout()
+plt.show()
+```
+
+```{python fig-4-1-2, fig.cap="Distribución final de $S_T$ frente a la densidad log-normal teórica."}
+# Distribución final vs log-normal teórica.
 S_T = S[-1, :]
-axes[1].hist(S_T, bins=60, density=True, color='steelblue', alpha=0.6, label='Simulado')
 
-# Log-normal teórica
+# La solución exacta del GBM implica que S_T es log-normal.
+# Usamos esa distribución como referencia para validar la simulación.
 from scipy.stats import lognorm
 mean_ln = np.log(S0) + (mu - 0.5 * sigma**2) * T
 std_ln  = sigma * np.sqrt(T)
 x_range = np.linspace(S_T.min(), S_T.max(), 300)
-axes[1].plot(x_range, lognorm.pdf(x_range, s=std_ln, scale=np.exp(mean_ln)),
-             'r-', linewidth=2, label='Log-normal teórica')
-axes[1].set_title("Distribución de $S_T$")
-axes[1].set_xlabel("$S_T$")
-axes[1].set_ylabel("Densidad")
-axes[1].legend()
 
-plt.tight_layout()
-plt.savefig("gbm.png", bbox_inches='tight')
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.hist(S_T, bins=60, density=True, color='steelblue', alpha=0.6, label='Simulado')
+ax.plot(x_range, lognorm.pdf(x_range, s=std_ln, scale=np.exp(mean_ln)),
+        'r-', linewidth=2, label='Log-normal teórica')
+ax.set_title("Distribución de $S_T$")
+ax.set_xlabel("$S_T$")
+ax.set_ylabel("Densidad")
+ax.legend()
+
 plt.show()
 ```
 
-![GBM: trayectorias y distribución final](gbm.png){width=95%}
-
 ```{python gbm-stats}
-# Comparación teórica vs simulada
+# Comparación teórica vs simulada.
+# La idea es verificar que el esquema numérico preserve, al menos de forma aproximada,
+# la media y la varianza del proceso continuo.
 E_ST_teo = S0 * np.exp(mu * T)
 E_ST_sim = S_T.mean()
 
@@ -88,4 +117,24 @@ VaR_95 = np.percentile(S_T, 5)
 print(f"\nVaR 95% (percentil 5%): {VaR_95:.2f}")
 ```
 
-**Discusión:** [Analizar convergencia al valor teórico y comportamiento de las trayectorias.]
+## Interpretación de resultados
+
+Los resultados esperados para este experimento son coherentes con la teoría del GBM. En la @fig-4-1-1, las trayectorias individuales fluctúan alrededor de la tendencia media, pero no la siguen de manera exacta: eso refleja el efecto acumulativo del ruido browniano. A medida que avanza el tiempo, la dispersión entre trayectorias crece, lo que es consistente con una volatilidad proporcional al nivel del activo.
+
+En la @fig-4-1-2, la distribución de $S_T$ debe verse asimétrica y sesgada hacia la derecha, con una forma muy cercana a la curva log-normal teórica. Esa coincidencia es importante porque valida que la simulación reproduce no solo una trayectoria típica, sino también la distribución terminal del proceso.
+
+La comparación entre momentos teóricos y simulados permite medir la calidad del esquema de Euler-Maruyama. Si la media y la varianza simuladas quedan cerca de sus valores analíticos, entonces la discretización está capturando correctamente la dinámica del modelo para el paso temporal elegido.
+
+## Discusión
+
+Este ejercicio muestra dos ideas relevantes. Primero, en un proceso estocástico continuo no basta con mirar una trayectoria aislada: una sola realización puede terminar por encima o por debajo de la media teórica sin que eso contradiga el modelo. Lo importante es el comportamiento agregado de muchas trayectorias.
+
+Segundo, la elección de $\sigma$ tiene un impacto central. Con una volatilidad mayor, la dispersión final aumenta, la distribución se ensancha y la probabilidad de observar valores extremos se vuelve más alta. En contextos financieros, esto se traduce en mayor incertidumbre sobre el precio futuro.
+
+También conviene remarcar que Euler-Maruyama es una aproximación numérica. Para pasos temporales pequeños funciona bien y resulta simple de implementar, pero si se quisiera mayor precisión podrían evaluarse esquemas más refinados o incluso la solución exacta del GBM, que en este caso es conocida.
+
+## Conclusión
+
+La simulación confirma que el Movimiento Browniano Geométrico es un modelo adecuado para procesos positivos con crecimiento medio y fluctuaciones aleatorias proporcionales al nivel. Las trayectorias simuladas muestran variabilidad creciente, la distribución terminal tiene la forma esperada y las magnitudes agregadas se alinean con la teoría.
+
+Esta sección ilustra cómo un modelo continuo puede analizarse simultáneamente desde tres niveles: trayectoria, distribución y momentos. Esa combinación de simulación e interpretación es la que hace útil al GBM como herramienta básica para estudiar fenómenos con incertidumbre continua.
