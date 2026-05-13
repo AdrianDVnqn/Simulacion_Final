@@ -10,7 +10,9 @@ La posterior conjugada es:
 $$\theta \mid \text{datos} \sim \text{Beta}(\alpha + k,\ \beta + n - k) = \text{Beta}(8, 4)$$
 
 ```{r fig-2-1-1, fig.cap="Posterior analítica Beta(8,4)."}
+# Grilla fina para evaluar la densidad posterior de forma continua.
 theta_grid <- seq(0, 1, length.out = 500)
+# Posterior conjugada Beta(8,4) para los datos observados.
 posterior  <- dbeta(theta_grid, 8, 4)
 
 ggplot(data.frame(theta = theta_grid, densidad = posterior),
@@ -27,22 +29,30 @@ La media posterior es $\hat{\theta} = 8/12 \approx 0{.}667$.
 ## 2.2 Implementación Metropolis–Hastings
 
 ```{r mh-impl}
+# Implementación básica de Metropolis-Hastings para muestrear la posterior de theta.
 mh <- function(n_iter = 5000, start = 0.5, prop_sd = 0.1, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
+  # Vector donde se guarda toda la cadena MCMC.
   theta    <- numeric(n_iter)
+  # Condición inicial de la cadena.
   theta[1] <- start
+  # Contador para estimar la tasa de aceptación.
   aceptados <- 0
 
   for (t in 2:n_iter) {
+    # Propuesta local normal alrededor del estado anterior.
     prop <- rnorm(1, theta[t-1], prop_sd)
 
+    # Rechazamos automáticamente propuestas fuera del soporte [0,1].
     if (prop < 0 || prop > 1) {
       theta[t] <- theta[t-1]
     } else {
+      # Razón de aceptación: verosimilitud multiplicada por el prior.
       num   <- dbinom(7, 10, prop)      * dbeta(prop, 1, 1)
       den   <- dbinom(7, 10, theta[t-1]) * dbeta(theta[t-1], 1, 1)
       alpha <- min(1, num / den)
 
+      # Aceptar o rechazar según una uniforme(0,1).
       if (runif(1) < alpha) {
         theta[t] <- prop
         aceptados <- aceptados + 1
@@ -54,12 +64,16 @@ mh <- function(n_iter = 5000, start = 0.5, prop_sd = 0.1, seed = NULL) {
   list(chain = theta, tasa_aceptacion = aceptados / (n_iter - 1))
 }
 
-# Cadena principal
+# Cadena principal para una corrida larga de la simulación.
 res     <- mh(n_iter = 10000, seed = 42)
+# Cadena completa generada por MH.
 cadena  <- res$chain
+# Primer tramo descartado para eliminar dependencia de la inicialización.
 burn_in <- 1000
+# Cadena que sí se usa para inferencia posterior al burn-in.
 cadena_post_burnin <- cadena[(burn_in + 1):length(cadena)]
 
+# Mostrar cuánto de la cadena fue aceptado por el algoritmo.
 cat(sprintf("Tasa de aceptación: %.2f%%\n", res$tasa_aceptacion * 100))
 ```
 
@@ -68,13 +82,17 @@ cat(sprintf("Tasa de aceptación: %.2f%%\n", res$tasa_aceptacion * 100))
 #### Traceplot
 
 ```{r fig-2-2-1, fig.cap="Traceplot de la cadena MH (con burn-in indicado en línea roja)."}
+# Data frame auxiliar para graficar la evolución temporal de theta.
 df_trace <- data.frame(iter = 1:length(cadena), theta = cadena)
 
 ggplot(df_trace, aes(x = iter, y = theta)) +
+  # Línea continua de la cadena MCMC a lo largo de las iteraciones.
   geom_line(color = "#607D8B", linewidth = 0.3, alpha = 0.8) +
+  # Marca visual del punto de corte del burn-in.
   geom_vline(xintercept = burn_in, color = "red", linetype = "dashed") +
   labs(title = "Traceplot — Cadena MH",
        x = "Iteración", y = expression(theta)) +
+  # Etiqueta para ubicar el burn-in dentro de la figura.
   annotate("text", x = burn_in + 100, y = 0.05,
            label = "Burn-in", color = "red", size = 3) +
   theme_minimal()
@@ -85,6 +103,7 @@ ggplot(df_trace, aes(x = iter, y = theta)) +
 #### Autocorrelación
 
 ```{r fig-2-2-2, fig.cap="Autocorrelación de la cadena post burn-in."}
+# ACF para medir dependencia entre muestras separadas por distintos lags.
 acf(cadena_post_burnin, main = "Autocorrelación — Cadena MH (post burn-in)",
     col = "#2196F3", lag.max = 50)
 ```
@@ -94,11 +113,14 @@ acf(cadena_post_burnin, main = "Autocorrelación — Cadena MH (post burn-in)",
 #### Histograma vs Beta(8,4)
 
 ```{r fig-2-2-3, fig.cap="Histograma MH vs posterior analítica Beta(8,4) (línea roja punteada)."}
+# Muestras post burn-in que se comparan con la posterior exacta.
 df_mh <- data.frame(theta = cadena_post_burnin)
 
 ggplot(df_mh, aes(x = theta)) +
+  # Histograma de la muestra MCMC en escala de densidad.
   geom_histogram(aes(y = after_stat(density)), bins = 60,
                  fill = "#03A9F4", color = "white", alpha = 0.7) +
+  # Densidad analítica Beta(8,4) para comparar visualmente con MH.
   stat_function(fun = \(x) dbeta(x, 8, 4),
                 color = "red", linewidth = 1.2, linetype = "dashed") +
   labs(title = "MH muestral vs Beta(8,4) analítica",
@@ -118,15 +140,19 @@ El agreement entre la distribución muestral y la teórica valida toda nuestra c
 ```{r mh-rhat}
 # Generamos 4 cadenas con distintos puntos de inicio
 cadenas_4 <- lapply(1:4, function(i) {
+  # Cada cadena arranca desde un valor inicial diferente para evaluar convergencia.
   mh(n_iter = 5000, start = runif(1), prop_sd = 0.1, seed = i * 10)$chain
 })
 
 # Convertir a objeto mcmc.list para coda
+# coda requiere mcmc.list para calcular diagnósticos entre cadenas.
 mcmc_list <- mcmc.list(lapply(cadenas_4, \(c) mcmc(c)))
 
+# Reporte del diagnóstico de convergencia Gelman-Rubin.
 cat("=== R-hat (Gelman-Rubin) ===\n")
 print(gelman.diag(mcmc_list))
 
+# Reporte del tamaño muestral efectivo de la muestra combinada.
 cat("\n=== ESS (Effective Sample Size) ===\n")
 print(effectiveSize(mcmc_list))
 ```
