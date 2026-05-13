@@ -38,47 +38,73 @@ El enfoque de **simulación por eventos** mantiene un reloj de simulación y pro
 Este método es **eficiente** porque salta directamente entre eventos sin simular tiempo "vacío", a diferencia de la simulación discreta con pasos fijos.
 
 ```{r mm1-sim}
+# Función de simulación por eventos discretos para un sistema M/M/1
+# Parámetros:
+#   lambda: tasa de llegadas (proceso de Poisson)
+#   mu: tasa de servicio (exponencial)
+#   T_max: tiempo de simulación en horas
+#   seed: semilla para reproducibilidad
 simulate_mm1 <- function(lambda, mu, T_max, seed = 42) {
   set.seed(seed)
-  t        <- 0
-  n        <- 0        # clientes en el sistema
-  t_arr    <- rexp(1, lambda)
-  t_dep    <- Inf
-  arrivals <- departures <- 0
-  wait_times   <- c()
-  queue_length <- data.frame(time = 0, n = 0)
+  
+  # Inicialización de variables de estado
+  t        <- 0              # Reloj de simulación
+  n        <- 0              # Número de clientes en el sistema
+  t_arr    <- rexp(1, lambda) # Tiempo del próximo evento de llegada
+  t_dep    <- Inf            # Tiempo del próximo evento de salida (infinito inicialmente)
+  arrivals <- departures <- 0 # Contadores de eventos
+  wait_times   <- c()         # Vector para tiempos de espera (futuro uso)
+  queue_length <- data.frame(time = 0, n = 0) # Historial: tiempo vs longitud de cola
 
+  # Loop principal de simulación: continúa hasta exceder T_max
   while (t < T_max) {
+    # Comparar próximos eventos: ¿qué sucede primero, llegada o salida?
     if (t_arr < t_dep) {
-      t      <- t_arr
-      n      <- n + 1
-      arrivals <- arrivals + 1
+      # EVENTO: LLEGADA DE CLIENTE
+      t      <- t_arr           # Adelantar reloj al tiempo de llegada
+      n      <- n + 1           # Incrementar clientes en el sistema
+      arrivals <- arrivals + 1  # Contador de llegadas totales
+      
+      # Si el servidor estaba libre (n=1 significa que este es el primer cliente)
+      # programar una salida generando tiempo de servicio exponencial
       if (n == 1) t_dep <- t + rexp(1, mu)
+      
+      # Generar próximo evento de llegada usando distribución exponencial
       t_arr  <- t + rexp(1, lambda)
     } else {
-      t      <- t_dep
-      n      <- n - 1
-      departures <- departures + 1
-      wait_times <- c(wait_times, t)
+      # EVENTO: SALIDA DE CLIENTE
+      t      <- t_dep           # Adelantar reloj al tiempo de salida
+      n      <- n - 1           # Decrementar clientes en el sistema
+      departures <- departures + 1 # Contador de salidas totales
+      wait_times <- c(wait_times, t) # Registrar tiempo de salida
+      
+      # Si hay clientes esperando, programar salida del siguiente
+      # Si no hay clientes (n=0), no hay salida próxima (t_dep = Inf)
       t_dep  <- if (n > 0) t + rexp(1, mu) else Inf
     }
+    
+    # Registrar el estado actual (longitud de cola) en el historial
     queue_length <- rbind(queue_length, data.frame(time = t, n = n))
   }
 
+  # Retornar lista con estadísticas y datos observados
   list(
-    arrivals   = arrivals,
-    departures = departures,
-    wait_times = wait_times,
-    queue_length = queue_length,
-    rho        = lambda / mu
+    arrivals   = arrivals,           # Total de clientes que llegaron
+    departures = departures,         # Total de clientes que se fueron
+    wait_times = wait_times,         # Tiempos de salida (aproximación a tiempos de espera)
+    queue_length = queue_length,     # Datos para graficar evolución de la cola
+    rho        = lambda / mu         # Utilización del servidor
   )
 }
 
+# Ejecutar simulación con parámetros del problema: λ=10, μ=4, T=8 horas
 res_mm1 <- simulate_mm1(lambda = 10, mu = 4, T_max = 8)
 
-cat(sprintf("Llegadas:    %d\n", res_mm1$arrivals))
-cat(sprintf("Salidas:     %d\n", res_mm1$departures))
-cat(sprintf("En sistema:  %d (cola acumulada por ρ > 1)\n",
+# Imprimir estadísticas resumidas
+cat("=== SIMULACIÓN M/M/1 (λ=10, μ=4, T=8h) ===\n")
+cat(sprintf("Llegadas:    %d clientes\n", res_mm1$arrivals))
+cat(sprintf("Salidas:     %d clientes\n", res_mm1$departures))
+cat(sprintf("En sistema:  %d clientes (cola acumulada, confirma ρ > 1)\n",
             res_mm1$arrivals - res_mm1$departures))
 ```
 
@@ -106,18 +132,46 @@ Los números resumidos muestran:
 **Comparación teórica vs simulada:**
 
 ```{r mm1-teoria}
-# Con rho > 1 el sistema es inestable; mostramos la tasa de utilización
-cat(sprintf("ρ = λ/μ = %.2f  →  Sistema %s\n",
-            res_mm1$rho,
-            ifelse(res_mm1$rho < 1, "ESTABLE", "INESTABLE (ρ > 1)")))
+# ANÁLISIS TEÓRICO DEL SISTEMA
+# ===============================
 
-# Si quisieras un sistema estable: lambda=3, mu=4 → rho=0.75
+# Verificar estabilidad del sistema inestable simulado (λ=10, μ=4)
+# En teoría de colas, ρ = λ/μ es el factor de utilización del servidor:
+#   Si ρ < 1: sistema estable, cola converge a equilibrio
+#   Si ρ > 1: sistema inestable, cola crece sin límite
+#   Si ρ = 1: caso límite, crece linealmente
+
+cat("\n=== DIAGNÓSTICO DE ESTABILIDAD ===\n")
+cat(sprintf("Sistema observado: ρ = λ/μ = 10/4 = %.2f\n", res_mm1$rho))
+cat(sprintf("Conclusión: Sistema %s (ρ > 1)\n",
+            ifelse(res_mm1$rho < 1, "ESTABLE", "INESTABLE")))
+cat("Implicación: cola crece indefinidamente, no hay equilibrio\n")
+
+# COMPARACIÓN: Crear un sistema estable modificando λ
+# Si reducimos llegadas a λ=3 (manteniendo μ=4), entonces ρ=3/4=0.75 < 1
+cat("\n=== CASO DE COMPARACIÓN: SISTEMA ESTABLE ===\n")
+cat("Simulamos con λ=3, μ=4 (ρ=0.75 < 1):\n")
+
 res_estable <- simulate_mm1(lambda = 3, mu = 4, T_max = 8)
 rho_s <- 3 / 4
-cat(sprintf("\nSistema estable (λ=3, μ=4): ρ=%.2f\n", rho_s))
-cat(sprintf("  Lq teórico  = ρ²/(1-ρ) = %.4f\n", rho_s^2 / (1 - rho_s)))
-cat(sprintf("  L  teórico  = ρ/(1-ρ)  = %.4f\n", rho_s / (1 - rho_s)))
-cat(sprintf("  Wq teórico  = λ×Lq/λ²  = %.4f h\n", rho_s / (4 * (1 - rho_s))))
+
+cat(sprintf("ρ = %.2f  →  Sistema ESTABLE\n", rho_s))
+cat("\nMétricas teóricas de equilibrio (fórmulas de M/M/1):\n")
+
+# Fórmulas analíticas de teoría de colas para sistemas estables (ρ < 1):
+# Lq = ρ²/(1-ρ):        número promedio de clientes en cola
+# L  = ρ/(1-ρ):         número promedio de clientes en el sistema
+# Wq = Lq/λ = ρ/(μ(1-ρ)): tiempo promedio de espera en cola
+
+Lq <- rho_s^2 / (1 - rho_s)
+L  <- rho_s / (1 - rho_s)
+Wq <- rho_s / (4 * (1 - rho_s))
+
+cat(sprintf("  Lq (clientes en cola)      = %.4f\n", Lq))
+cat(sprintf("  L  (clientes en sistema)   = %.4f\n", L))
+cat(sprintf("  Wq (espera en cola)        = %.4f horas\n", Wq))
+
+cat("\n→ Estos valores son FINITOS y ESTABLES, no divergen como en ρ > 1\n")
 ```
 
 ## 3.4 Conclusión
