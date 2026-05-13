@@ -4,108 +4,90 @@
 
 ## Sistema de transcripción de mRNA
 
-El sistema modela la producción y degradación de mRNA:
+Gillispie SSA (Stochastic Simulation Algorithm) es un método para simular reacciones y contestar a preguntas sobre la dinámica de los mismos, como por ejemplo ¿cuándo ocurre la próxima reacción? o ¿cuál es la próxima reacción que ocurre? 
+
+El siguiente sistema modela la producción y degradación de mRNA:
 
 $$\emptyset \xrightarrow{k_1} \text{mRNA} \qquad \text{mRNA} \xrightarrow{k_2} \emptyset$$
 
-con $k_1 = 10$ (producción) y $k_2 = 1$ (degradación). El estado estacionario teórico es $\bar{X} = k_1/k_2 = 10$.
+con $k_1 = 10$ (tasa de producción) y $k_2 = 1$ (tasa de degradación). El estado estacionario teórico es $\bar{X} = k_1/k_2 = 10$.
 
-```{r gillespie-impl}
-gillespie <- function(Tmax, k1 = 10, k2 = 1, seed = 42) {
-  set.seed(seed)
+```{r gillespie-impl, warning=FALSE}
+library(ggplot2)
+
+
+gillespie_mrna <- function(t_max = 50,
+                           k_prod = 10,   # tasa de producción
+                           k_deg  = 1, # tasa de degradación
+                           m0     = 0) { # mRNA inicial
+  
+  # estado inicial
   t  <- 0
-  X  <- 0L
-  ts <- numeric(1e6)
-  xs <- integer(1e6)
-  idx <- 1L
-  ts[idx] <- t;  xs[idx] <- X
-
-  while (t < Tmax) {
-    a1 <- k1
-    a2 <- k2 * X
+  m  <- m0
+  
+  # para guardar la trayectoria
+  times <- c(t)
+  Ms    <- c(m)
+  
+  max_steps <- 1e5
+  step <- 1
+  
+  while (t < t_max && step < max_steps) {
+    # 1) Calcular propensiones
+    a1 <- k_prod            # ∅ -> M
+    a2 <- k_deg * m         # M -> ∅
     a0 <- a1 + a2
-
-    if (a0 == 0) break           # estado absorbente (imposible aquí por k1>0)
-
-    tau <- rexp(1, rate = a0)
-    t   <- t + tau
-
-    if (t > Tmax) break
-
-    if (runif(1) * a0 < a1) {
-      X <- X + 1L
+    
+    # Si no hay más reacciones posibles, cortar
+    if (a0 <= 0) break
+    
+    # 2) Generar dos uniformes
+    r1 <- runif(1)
+    r2 <- runif(1)
+    
+    # 3) Tiempo hasta la próxima reacción
+    tau <- -log(r1) / a0
+    t <- t + tau
+    
+    # 4) Elegir qué reacción ocurre
+    # Prob( R1 ) = a1 / a0
+    if (r2 * a0 < a1) {
+      # reacción 1: producción
+      m <- m + 1
     } else {
-      X <- max(0L, X - 1L)
+      # reacción 2: degradación
+      if (m > 0) {
+        m <- m - 1
+      }
     }
-
-    idx <- idx + 1L
-    ts[idx] <- t
-    xs[idx] <- X
+    
+    # 5) Guardar nuevo estado
+    times <- c(times, t)
+    Ms    <- c(Ms, m)
+    
+    step <- step + 1
   }
-
-  data.frame(time = ts[1:idx], X = xs[1:idx])
+  
+  data.frame(time = times, m = Ms)
 }
 
-# Simulación
-ssa_res <- gillespie(Tmax = 200, k1 = 10, k2 = 1)
-cat(sprintf("Pasos simulados: %d\n", nrow(ssa_res)))
-cat(sprintf("Media de X (simulada): %.3f  |  Teórica: %.1f\n",
-            mean(ssa_res$X), 10))
-cat(sprintf("Var  de X (simulada): %.3f  |  Teórica: %.1f (Poisson)\n",
-            var(ssa_res$X), 10))
+# Ejecutar simulación
+set.seed(123)
+traj <- gillespie_mrna(t_max = 50,
+                       k_prod = 10,
+                       k_deg  = 1,
+                       m0     = 0)
+
+
+#
 ```
 
-```{r gillespie-plot, fig.cap="Trayectoria estocástica de mRNA por SSA de Gillespie."}
-# Subsamplear para el gráfico
-idx_plot <- seq(1, nrow(ssa_res), by = max(1, nrow(ssa_res) %/% 5000))
-
-ggplot(ssa_res[idx_plot, ], aes(x = time, y = X)) +
-  geom_step(color = "#009688", linewidth = 0.5, alpha = 0.85) +
-  geom_hline(yintercept = 10, color = "red", linetype = "dashed", linewidth = 0.8) +
-  labs(title    = "Gillespie SSA — Nivel de mRNA",
-       subtitle = "Línea roja: estado estacionario teórico k₁/k₂ = 10",
-       x = "Tiempo", y = "Moléculas de mRNA") +
+```{r gillespie-plot, echo=FALSE, warning=FALSE}
+ggplot(traj, aes(x = time, y = m)) +
+  geom_step(color = "darkgreen", linewidth = 0.8) +
+  geom_hline(yintercept = 10, color = "darkred", linetype = "dashed") +
+  labs(title = "Simulación Gillespie SSA: Producción/Degradación de mRNA",
+       x = "Tiempo", y = "Número de mRNA") +
   theme_minimal()
 ```
 
-```{r gillespie-dist, fig.cap="Distribución estacionaria simulada vs Poisson(10) teórica."}
-# Distribución en estado estacionario (descartamos transitorio)
-burn_ssa <- ssa_res$X[ssa_res$time > 50]
-
-df_ssa <- as.data.frame(table(burn_ssa) / length(burn_ssa))
-df_ssa$burn_ssa <- as.integer(as.character(df_ssa$burn_ssa))
-
-x_vals <- 0:max(df_ssa$burn_ssa)
-df_pois <- data.frame(x = x_vals, prob = dpois(x_vals, lambda = 10))
-
-ggplot() +
-  geom_col(data = df_ssa, aes(x = burn_ssa, y = Freq),
-           fill = "#009688", alpha = 0.6, width = 0.6) +
-  geom_line(data = df_pois, aes(x = x, y = prob),
-            color = "red", linewidth = 1) +
-  geom_point(data = df_pois, aes(x = x, y = prob), color = "red", size = 2) +
-  labs(title = "Distribución estacionaria: simulada vs Poisson(10)",
-       x = "X (mRNA)", y = "Probabilidad") +
-  theme_minimal()
-```
-
-### Múltiples trayectorias
-
-```{r gillespie-multiples, fig.cap="Cinco trayectorias independientes del SSA."}
-# 5 trayectorias independientes
-trajs <- lapply(1:5, function(i) {
-  res <- gillespie(Tmax = 100, k1 = 10, k2 = 1, seed = i * 7)
-  res$traj <- i
-  res
-})
-
-df_trajs <- do.call(rbind, trajs)
-
-ggplot(df_trajs, aes(x = time, y = X, color = factor(traj), group = traj)) +
-  geom_step(linewidth = 0.4, alpha = 0.7) +
-  geom_hline(yintercept = 10, color = "black", linetype = "dashed") +
-  scale_color_brewer(palette = "Set1") +
-  labs(title = "Múltiples trayectorias SSA", x = "Tiempo",
-       y = "Moléculas", color = "Trayectoria") +
-  theme_minimal()
-```
