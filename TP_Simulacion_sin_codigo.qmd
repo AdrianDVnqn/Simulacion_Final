@@ -1,0 +1,137 @@
+---
+lang: es
+format:
+  pdf:
+    title-block: false
+    toc: false
+    number-sections: true
+    geometry: margin=2.5cm
+    include-in-header:
+      text: |
+        \usepackage[utf8]{inputenc}
+        \usepackage{xcolor}
+        % Definición del azul institucional proporcionado
+        \definecolor{australblue}{HTML}{1924AD} 
+  html:
+    title-block: false
+    toc: true
+    toc-float: true
+    code-fold: true
+    theme: cosmo
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: false
+knitr:
+  opts_chunk:
+    fig.align: "center"
+---
+
+\begin{titlepage}
+    \centering
+    
+    % Logo con margen superior
+    \vspace*{0.6cm}
+    \includegraphics[width=0.5\textwidth]{austral.jpg}\par
+    {\LARGE \text{Maestría en Ciencia de Datos}\par}
+    \vspace{1 cm}
+    {\LARGE \textbf{SIMULACIÓN Y OPTIMIZACIÓN}\par}
+    {\LARGE \textbf{EN CIENCIA DE DATOS}\par}
+    \vspace{0.6cm}
+    {\huge \textbf{Trabajo Práctico Integral}\par}
+    \vspace{0.5cm}
+
+    
+    \vspace{2.5cm}
+
+    % Distribución de participantes
+    \begin{minipage}[t]{0.45\textwidth}
+        \flushleft
+        {\large \color{australblue}\textbf{Profesores}} \\
+        \vspace{0.3cm}
+        Rodrigo del Rosso \\
+        Ezequiel Nuske
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \flushright
+        {\large \color{australblue}\textbf{Alumnos}} \\
+        \vspace{0.3cm}
+        Sebastián Ayala Sosa \\
+        Adrian Della Valentina \\
+        Gloria Molina Pico \\
+        José Roa Ramírez
+    \end{minipage}
+
+    \vfill
+    
+    % Pie de página con fecha
+    {\large 19 de mayo de 2026}\par
+    \vspace{0.2cm}
+    {\color{australblue}\hrule height 1pt}
+    
+\end{titlepage}
+
+```{=latex}
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\tableofcontents
+\newpage
+```
+
+```{r setup-r, include=FALSE}
+# ── Librerías R ──────────────────────────────────────────────────────────────
+# Instala paquetes faltantes para evitar errores al renderizar en otra maquina.
+r_required <- c("ggplot2", "patchwork", "coda", "randtests")
+r_missing <- r_required[!vapply(r_required, requireNamespace, logical(1), quietly = TRUE)]
+if (length(r_missing) > 0) {
+  install.packages(r_missing, repos = "https://cloud.r-project.org")
+}
+
+library(ggplot2)
+library(patchwork)
+library(coda)         # R-hat, ESS
+# library(tseries)    # runs.test (alternativa: randtests)
+set.seed(42)
+```
+
+```{python setup-py, include=FALSE}
+# ── Librerías Python ──────────────────────────────────────────────────────────
+# Instala paquetes faltantes en el entorno activo de Python (reticulate).
+import importlib.util
+import subprocess
+import sys
+
+py_required = ["numpy", "matplotlib", "scipy", "statsmodels"]
+py_missing = [pkg for pkg in py_required if importlib.util.find_spec(pkg) is None]
+if py_missing:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", *py_missing])
+
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+matplotlib.rcParams['figure.dpi'] = 150
+from scipy import stats
+np.random.seed(42)
+```
+
+{{< include secciones/00-introduccion.qmd >}}
+
+{{< include secciones/01-parte-1-generacion-pseudoaleatoria-montecarlo.qmd >}}
+
+{{< include secciones/02-parte-2-metropolis-hastings.qmd >}}
+
+{{< include secciones/03-parte-3-mm1.qmd >}}
+
+{{< include secciones/04-parte-4-gbm.qmd >}}
+
+{{< include secciones/05-parte-5-gillespie.qmd >}}
+
+{{< include secciones/06-parte-integradora-opcional.qmd >}}
+
+{{< include secciones/06-resumen.qmd >}}
+
+{{< include secciones/07-referencias.qmd >}}
