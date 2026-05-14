@@ -129,6 +129,8 @@ Los números resumidos muestran:
 - **31 salidas** en 8 horas (mucho menor que las llegadas)
 - **37 clientes acumulados** en el sistema al final, validando visualmente el crecimiento exponencial en el gráfico
 
+Como solo se presenta una réplica, estos valores deben leerse como una realización particular del proceso y no como una estimación estable de largo plazo. Aun así, la inestabilidad se detecta de manera inequívoca porque $\rho = 2.5 > 1$.
+
 **Comparación teórica vs simulada:**
 
 ```{r mm1-teoria}
@@ -172,6 +174,85 @@ cat(sprintf("  L  (clientes en sistema)   = %.4f\n", L))
 cat(sprintf("  Wq (espera en cola)        = %.4f horas\n", Wq))
 
 cat("\n→ Estos valores son FINITOS y ESTABLES, no divergen como en ρ > 1\n")
+
+# Validación formal con R = 100 réplicas del sistema estable.
+queue_time_average <- function(history, T_max) {
+  times <- c(history$time, T_max)
+  q <- pmax(history$n - 1, 0)
+  dt <- diff(times)
+  sum(q * dt) / T_max
+}
+
+replicas <- 100
+lq_sim <- numeric(replicas)
+for (r in seq_len(replicas)) {
+  sim_r <- simulate_mm1(lambda = 3, mu = 4, T_max = 200, seed = 100 + r)
+  lq_sim[r] <- queue_time_average(sim_r$queue_length, 200)
+}
+
+ci_lq <- quantile(lq_sim, probs = c(0.025, 0.975))
+cat("\n=== Validación con 100 réplicas (sistema estable λ=3, μ=4) ===\n")
+cat(sprintf("Lq teórico = %.4f\n", Lq))
+cat(sprintf("Lq simulado promedio = %.4f\n", mean(lq_sim)))
+cat(sprintf("IC 95%% del Lq simulado = [%.4f, %.4f]\n", ci_lq[1], ci_lq[2]))
+
+# Simulación M/M/c con c = 3 servidores como solución práctica al caso original.
+simulate_mmc <- function(lambda, mu, c, T_max, seed = 42) {
+  set.seed(seed)
+  t <- 0
+  n <- 0
+  t_arr <- rexp(1, lambda)
+  dep_times <- rep(Inf, c)
+  arrivals <- 0
+  departures <- 0
+  history <- data.frame(time = 0, n = 0)
+
+  while (t < T_max) {
+    next_dep <- min(dep_times)
+    if (t_arr < next_dep) {
+      t <- t_arr
+      n <- n + 1
+      arrivals <- arrivals + 1
+      free <- which(is.infinite(dep_times))
+      if (length(free) > 0) {
+        dep_times[free[1]] <- t + rexp(1, mu)
+      }
+      t_arr <- t + rexp(1, lambda)
+    } else {
+      idx <- which.min(dep_times)
+      t <- dep_times[idx]
+      n <- n - 1
+      departures <- departures + 1
+      if (n >= c) {
+        dep_times[idx] <- t + rexp(1, mu)
+      } else {
+        dep_times[idx] <- Inf
+      }
+    }
+    history <- rbind(history, data.frame(time = t, n = n))
+  }
+
+  list(arrivals = arrivals, departures = departures, history = history, rho = lambda / (c * mu))
+}
+
+mmc_res <- simulate_mmc(lambda = 10, mu = 4, c = 3, T_max = 8, seed = 99)
+cat("\n=== Caso M/M/3 como mitigación del sistema original ===\n")
+cat(sprintf("ρ/c = %.2f < 1 -> sistema estable\n", mmc_res$rho))
+cat(sprintf("Llegadas: %d | Salidas: %d\n", mmc_res$arrivals, mmc_res$departures))
+```
+
+```{r fig-3-1-2, fig.cap="Contraste entre el sistema original inestable y el caso estable comparativo."}
+df_mm1_plot <- rbind(
+  transform(res_mm1$queue_length, escenario = "M/M/1 inestable (lambda=10, mu=4)"),
+  transform(res_estable$queue_length, escenario = "M/M/1 estable (lambda=3, mu=4)")
+)
+
+ggplot(df_mm1_plot, aes(x = time, y = n)) +
+  geom_step(color = "#1565C0", linewidth = 0.5) +
+  facet_wrap(~escenario, ncol = 1, scales = "free_y") +
+  labs(title = "Contraste entre cola inestable y cola estable",
+       x = "Tiempo (horas)", y = "Clientes en el sistema") +
+  theme_minimal()
 ```
 
 ## 3.4 Conclusión
@@ -193,4 +274,4 @@ En contraste, si reducimos la tasa de llegadas a λ=3 clientes/hora (manteniendo
 
 Estos valores convergentes indican un sistema en equilibrio estacionario, donde las colas se autorregulan. Esta es la situación deseada en la práctica y la única donde la teoría de colas proporciona modelos predecibles.
 
-**Lección clave:** La simulación de eventos discretos permite "ver" el comportamiento dinámico que la teoría predice. En ingeniería de sistemas, esto justifica inversiones en infraestructura: en sistemas sobrecargados ($\rho > 1$), la única solución es aumentar capacidad (μ) o reducir demanda (λ), no optimizar el algoritmo.
+La simulación de eventos discretos permite "ver" el comportamiento dinámico que la teoría predice. En ingeniería de sistemas, esto justifica inversiones en infraestructura: en sistemas sobrecargados ($\rho > 1$), la única solución es aumentar capacidad (μ) o reducir demanda (λ), no optimizar el algoritmo.

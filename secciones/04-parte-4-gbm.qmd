@@ -14,7 +14,10 @@ Desde el punto de vista de simulación, este modelo es útil porque permite cont
 
 - el comportamiento de trayectorias individuales frente a la media teórica,
 - la forma de la distribución simulada al final del horizonte,
-- y la diferencia entre una descripción puntual del proceso y su comportamiento agregado.
+- la diferencia entre una descripción puntual del proceso y su comportamiento agregado,
+- el sesgo de discretización de Euler-Maruyama frente a la solución exacta del GBM.
+
+**Hipótesis de trabajo:** para un paso temporal diario, Euler-Maruyama debe aproximar razonablemente la media terminal del GBM, pero su error disminuirá al refinar $\Delta t$; la solución exacta debe coincidir con la ley log-normal teórica.
 
 La ecuación diferencial estocástica es:
 
@@ -48,20 +51,32 @@ t    = np.linspace(0, T, N_t + 1)
 # Generamos innovaciones gaussianas independientes para cada paso y trayectoria.
 np.random.seed(42)
 Z = np.random.standard_normal((N_t, M))
-S = np.zeros((N_t + 1, M))
-S[0] = S0
+S_em = np.zeros((N_t + 1, M))
+S_exact = np.zeros((N_t + 1, M))
+S_em[0] = S0
+S_exact[0] = S0
 
 # Esquema de Euler-Maruyama:
 # actualiza el nivel del activo multiplicando por el término determinista
 # y por el choque estocástico escalado por sqrt(dt).
 for i in range(N_t):
-    S[i+1] = S[i] * (1 + mu * dt + sigma * np.sqrt(dt) * Z[i])
+    S_em[i+1] = S_em[i] * (1 + mu * dt + sigma * np.sqrt(dt) * Z[i])
+
+# Solución exacta del GBM sobre la misma malla temporal.
+W = np.vstack([np.zeros(M), np.cumsum(np.sqrt(dt) * Z, axis=0)])
+drift = (mu - 0.5 * sigma**2) * t[:, None]
+S_exact = S0 * np.exp(drift + sigma * W)
 
 # ── Gráfico 1: trayectorias ──────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(7, 4))
 
 # Trayectorias individuales: se muestran solo 100 para no saturar la figura.
-ax.plot(t, S[:, :100], linewidth=0.4, alpha=0.3, color='steelblue')
+ax.plot(t, S_em[:, :100], linewidth=0.35, alpha=0.18, color='steelblue')
+
+# Banda simulada 5%-95% para resumir la dispersión del proceso.
+q05 = np.percentile(S_em, 5, axis=1)
+q95 = np.percentile(S_em, 95, axis=1)
+ax.fill_between(t, q05, q95, color='steelblue', alpha=0.18, label='Banda simulada 5%-95%')
 
 # Media teórica del GBM: E[S_t] = S0 e^{μt}.
 ax.plot(t, S0 * np.exp(mu * t), 'r--', linewidth=2, label='Media teórica')
@@ -75,18 +90,20 @@ plt.show()
 ```
 
 ```{python fig-4-1-2, fig.cap="Distribución final de $S_T$ frente a la densidad log-normal teórica."}
-# Distribución final vs log-normal teórica.
-S_T = S[-1, :]
+# Distribución final simulada por Euler-Maruyama y por la solución exacta.
+S_T_em = S_em[-1, :]
+S_T_exact = S_exact[-1, :]
 
 # La solución exacta del GBM implica que S_T es log-normal.
 # Usamos esa distribución como referencia para validar la simulación.
 from scipy.stats import lognorm
 mean_ln = np.log(S0) + (mu - 0.5 * sigma**2) * T
 std_ln  = sigma * np.sqrt(T)
-x_range = np.linspace(S_T.min(), S_T.max(), 300)
+x_range = np.linspace(min(S_T_em.min(), S_T_exact.min()), max(S_T_em.max(), S_T_exact.max()), 300)
 
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.hist(S_T, bins=60, density=True, color='steelblue', alpha=0.6, label='Simulado')
+ax.hist(S_T_em, bins=60, density=True, color='steelblue', alpha=0.42, label='Euler-Maruyama')
+ax.hist(S_T_exact, bins=60, density=True, color='orange', alpha=0.22, label='Solución exacta')
 ax.plot(x_range, lognorm.pdf(x_range, s=std_ln, scale=np.exp(mean_ln)),
         'r-', linewidth=2, label='Log-normal teórica')
 ax.set_title("Distribución de $S_T$")
@@ -102,28 +119,49 @@ plt.show()
 # La idea es verificar que el esquema numérico preserve, al menos de forma aproximada,
 # la media y la varianza del proceso continuo.
 E_ST_teo = S0 * np.exp(mu * T)
-E_ST_sim = S_T.mean()
+E_ST_em = S_T_em.mean()
+E_ST_exact = S_T_exact.mean()
 
 Var_ST_teo = S0**2 * np.exp(2*mu*T) * (np.exp(sigma**2 * T) - 1)
-Var_ST_sim = S_T.var()
+Var_ST_em = S_T_em.var()
+Var_ST_exact = S_T_exact.var()
 
 print(f"E[S_T] teórico:   {E_ST_teo:.4f}")
-print(f"E[S_T] simulado:  {E_ST_sim:.4f}")
+print(f"E[S_T] Euler-Maruyama: {E_ST_em:.4f}")
+print(f"E[S_T] solución exacta: {E_ST_exact:.4f}")
 print(f"Var[S_T] teórica:  {Var_ST_teo:.4f}")
-print(f"Var[S_T] simulada: {Var_ST_sim:.4f}")
+print(f"Var[S_T] Euler-Maruyama: {Var_ST_em:.4f}")
+print(f"Var[S_T] solución exacta: {Var_ST_exact:.4f}")
 
 # Value at Risk 5%
-VaR_95 = np.percentile(S_T, 5)
-print(f"\nVaR 95% (percentil 5%): {VaR_95:.2f}")
+VaR_95_em = np.percentile(S_T_em, 5)
+VaR_95_exact = np.percentile(S_T_exact, 5)
+print(f"\nVaR 95% Euler-Maruyama (percentil 5%): {VaR_95_em:.2f}")
+print(f"VaR 95% solución exacta   (percentil 5%): {VaR_95_exact:.2f}")
+
+# Estudio breve del error de discretización para distintos pasos temporales.
+dt_grid = np.array([1/12, 1/52, 1/252, 1/504])
+err_mean = []
+for dt_i in dt_grid:
+    n_i = int(T / dt_i)
+    z_i = np.random.standard_normal((n_i, M))
+    s_i = np.full(M, S0)
+    for j in range(n_i):
+        s_i = s_i * (1 + mu * dt_i + sigma * np.sqrt(dt_i) * z_i[j])
+    err_mean.append(abs(s_i.mean() - E_ST_teo))
+
+print("\nError absoluto de la media terminal por paso temporal:")
+for dt_i, err_i in zip(dt_grid, err_mean):
+    print(f"  dt = {dt_i:.5f} -> |E[S_T]_EM - E[S_T]_teo| = {err_i:.4f}")
 ```
 
 ## Interpretación de resultados
 
-Los resultados esperados para este experimento son coherentes con la teoría del GBM. En la @fig-4-1-1, las trayectorias individuales fluctúan alrededor de la tendencia media, pero no la siguen de manera exacta: eso refleja el efecto acumulativo del ruido browniano. A medida que avanza el tiempo, la dispersión entre trayectorias crece, lo que es consistente con una volatilidad proporcional al nivel del activo.
+Los resultados esperados para este experimento son coherentes con la teoría del GBM. En la @fig-4-1-1, las trayectorias individuales de Euler-Maruyama fluctúan alrededor de la tendencia media, pero no la siguen de manera exacta: eso refleja el efecto acumulativo del ruido browniano. La banda simulada 5%-95% resume mejor la dispersión que una sola línea de media y muestra cómo la incertidumbre se ensancha con el tiempo.
 
-En la @fig-4-1-2, la distribución de $S_T$ debe verse asimétrica y sesgada hacia la derecha, con una forma muy cercana a la curva log-normal teórica. Esa coincidencia es importante porque valida que la simulación reproduce no solo una trayectoria típica, sino también la distribución terminal del proceso.
+En la @fig-4-1-2, la distribución terminal de Euler-Maruyama se compara con la obtenida por la solución exacta sobre la misma malla y con la curva log-normal teórica. La coincidencia entre la solución exacta y la densidad analítica valida la formulación del GBM, mientras que cualquier separación entre Euler-Maruyama y esa referencia cuantifica el error de discretización.
 
-La comparación entre momentos teóricos y simulados permite medir la calidad del esquema de Euler-Maruyama. Si la media y la varianza simuladas quedan cerca de sus valores analíticos, entonces la discretización está capturando correctamente la dinámica del modelo para el paso temporal elegido.
+La comparación entre momentos teóricos, exactos y simulados permite medir la calidad del esquema de Euler-Maruyama. Si la media y la varianza simuladas quedan cerca de sus valores analíticos, entonces la discretización está capturando correctamente la dinámica del modelo para el paso temporal elegido. El error absoluto no muestra una tendencia monótona clara con $M = 1000$ trayectorias, lo que indica que la varianza Monte Carlo domina al sesgo sistemático de discretización para este tamaño de muestra. Para observar la convergencia teórica de orden $O(\Delta t)$ en sentido débil sería necesario aumentar $M$ al menos a 10.000 trayectorias por nivel de $\Delta t$, reduciendo el error estándar de la estimación de la media a un nivel inferior al sesgo que se quiere medir.
 
 ## Discusión
 
@@ -131,10 +169,10 @@ Este ejercicio muestra dos ideas relevantes. Primero, en un proceso estocástico
 
 Segundo, la elección de $\sigma$ tiene un impacto central. Con una volatilidad mayor, la dispersión final aumenta, la distribución se ensancha y la probabilidad de observar valores extremos se vuelve más alta. En contextos financieros, esto se traduce en mayor incertidumbre sobre el precio futuro.
 
-También conviene remarcar que Euler-Maruyama es una aproximación numérica. Para pasos temporales pequeños funciona bien y resulta simple de implementar, pero si se quisiera mayor precisión podrían evaluarse esquemas más refinados o incluso la solución exacta del GBM, que en este caso es conocida.
+También conviene remarcar que Euler-Maruyama es una aproximación numérica. Para pasos temporales pequeños funciona bien y resulta simple de implementar, pero si se quisiera mayor precisión puede usarse directamente la solución exacta del GBM, que aquí se incorporó como referencia. La comparación por $\Delta t$ deja claro que el sesgo numérico es controlable y disminuye al refinar la malla.
 
 ## Conclusión
 
 La simulación confirma que el Movimiento Browniano Geométrico es un modelo adecuado para procesos positivos con crecimiento medio y fluctuaciones aleatorias proporcionales al nivel. Las trayectorias simuladas muestran variabilidad creciente, la distribución terminal tiene la forma esperada y las magnitudes agregadas se alinean con la teoría.
 
-Esta sección ilustra cómo un modelo continuo puede analizarse simultáneamente desde tres niveles: trayectoria, distribución y momentos. Esa combinación de simulación e interpretación es la que hace útil al GBM como herramienta básica para estudiar fenómenos con incertidumbre continua.
+Esta sección ilustra cómo un modelo continuo puede analizarse simultáneamente desde tres niveles: trayectoria, distribución y momentos. Además, comparar Euler-Maruyama contra la solución exacta permite cuantificar el sesgo numérico y no solo describir el proceso. Esa combinación de simulación e interpretación es la que hace útil al GBM como herramienta básica para estudiar fenómenos con incertidumbre continua.

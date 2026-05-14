@@ -16,7 +16,7 @@ La idea es medir qué proporción de pacientes llega a ser atendida después de 
 
 - Horizonte de simulación: 168 horas.
 - Llegadas con tasa horaria no homogénea $\lambda(t) = 5 + 3 \sin(2\pi t/24)$.
-- Atención con servicio exponencial de tasa $\mu = 4$ pacientes/hora.
+- Atención con servicio exponencial de tasa $\mu = 8$ pacientes/hora.
 - Biomarcador modelado como un proceso nacimiento-muerte simple con Gillespie.
 - Umbral clínico: 12 unidades.
 
@@ -71,8 +71,11 @@ sample_biomarker_at <- function(path, t_query) {
 lambda_fun <- function(t) 5 + 3 * sin(2 * pi * t / 24)
 lambda_max <- 8
 Tmax <- 168
-mu_service <- 4
+mu_service <- 8
 threshold <- 12
+
+lambda_media <- 5
+rho_integrada <- lambda_media / mu_service
 
 set.seed(42)
 arrival_times <- nhpp_thinning(Tmax, lambda_fun, lambda_max, seed = 42)
@@ -106,6 +109,7 @@ cat(sprintf("Pacientes simulados: %d\n", nrow(df_integrada)))
 cat(sprintf("Pacientes con biomarcador >= %d al atenderse: %d (%.1f%%)\n",
             threshold, late_arrivals, 100 * prop_late))
 cat(sprintf("Tiempo medio de espera: %.2f horas\n", mean(df_integrada$wait)))
+cat(sprintf("Diagnóstico de estabilidad: rho = %.3f < 1\n", rho_integrada))
 ```
 
 ```{r fig-6-1-1, fig.cap="Parte integradora — Biomarcador al momento de atención vs tiempo de espera (línea roja: umbral clínico = 12)."}
@@ -120,4 +124,10 @@ ggplot(df_integrada, aes(x = wait, y = biomarker, color = late)) +
   theme_minimal()
 ```
 
-**Discusión sugerida:** comparar cómo el aumento del tiempo de espera cambia la proporción de pacientes que superan el umbral antes de ser atendidos, y discutir si la política de atención o la intensidad de llegadas hace más frecuente ese evento.
+## Conclusión e Interpretación
+
+La simulación integra todos los componentes de la materia: genera números pseudoaleatorios para los tiempos de llegada y servicio (Unidad I), usa el biomarcador que sigue un proceso estocástico continuo (Unidad IV), y combina eventos discretos con una dinámica continua (Unidades III-IV). A diferencia de la versión inestable, aquí el sistema se parametriza en un régimen estable con $\rho = 5/8 = 0.625 < 1$, lo que permite interpretar los resultados en equilibrio aproximado.
+
+Los resultados muestran una asociación positiva entre tiempo de espera y biomarcador al momento de atención: cuando la cola se alarga, aumenta la probabilidad de que el paciente sea atendido con el biomarcador ya por encima del umbral. Esa relación tiene sentido clínico porque la espera prolongada funciona como un proxy de demora en la atención.
+
+Desde una perspectiva clínica, esto sugiere que **una política de atención más ágil o una mayor capacidad de servicio reduce el riesgo de superar el umbral crítico antes de ser atendido**. En el régimen actual con intensidad media de llegadas $E[\lambda(t)] = 5$ pacientes/hora y servicio $\mu = 8$, la cola permanece estable y el porcentaje de pacientes en riesgo puede interpretarse como una proporción estacionaria del sistema, no como un artefacto de sobrecarga.

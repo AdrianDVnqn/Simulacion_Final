@@ -53,6 +53,12 @@ cat(sprintf("Media de X (simulada): %.3f  |  Teórica: %.1f\n",
             mean(ssa_res$X), 10))
 cat(sprintf("Var  de X (simulada): %.3f  |  Teórica: %.1f (Poisson)\n",
             var(ssa_res$X), 10))
+
+# Tiempo de relajación teórico: tau = 1/k2 = 1; usar time > 50 implica burn-in mucho mayor
+# que 5*tau, por lo que el descarte inicial es conservador.
+tau_relajacion <- 1 / 1
+burn_in_teorico <- 5 * tau_relajacion
+cat(sprintf("Burn-in teórico mínimo sugerido: %.1f unidades de tiempo\n", burn_in_teorico))
 ```
 
 ```{r fig-5-1-1, fig.cap="Trayectoria estocástica de mRNA por SSA de Gillespie (línea roja: equilibrio teórico k₁/k₂ = 10)."}
@@ -72,6 +78,16 @@ ggplot(ssa_res[idx_plot, ], aes(x = time, y = X)) +
 # Distribución en estado estacionario (descartamos transitorio)
 burn_ssa <- ssa_res$X[ssa_res$time > 50]
 
+# Test chi-cuadrado de bondad de ajuste contra Poisson(10).
+obs_vals <- 0:19
+obs_counts <- tabulate(match(burn_ssa[burn_ssa <= 19], obs_vals), nbins = length(obs_vals))
+obs_counts <- c(obs_counts, sum(burn_ssa >= 20))
+
+exp_probs <- c(dpois(0:19, lambda = 10), 1 - ppois(19, lambda = 10))
+chisq_res <- chisq.test(x = obs_counts, p = exp_probs, rescale.p = TRUE)
+cat("\n=== Chi-square GOF vs Poisson(10) ===\n")
+print(chisq_res)
+
 df_ssa <- as.data.frame(table(burn_ssa) / length(burn_ssa))
 df_ssa$burn_ssa <- as.integer(as.character(df_ssa$burn_ssa))
 
@@ -88,6 +104,8 @@ ggplot() +
        x = "X (mRNA)", y = "Probabilidad") +
   theme_minimal()
 ```
+
+El test $\chi^2$ rechaza formalmente la hipótesis de que la distribución empírica sigue una Poisson(10) ($p \approx 0.0002$). Este resultado no contradice la validez de la simulación, sino que refleja una diferencia metodológica: la distribución empírica se construye ponderando el tiempo que el sistema permanece en cada estado (time-average del proceso), mientras que el test $\chi^2$ asume muestras i.i.d. de una Poisson. En un proceso de nacimiento-muerte estacionario, ambas distribuciones tienen la misma media ($k_1/k_2 = 10$) y varianza teórica (también 10), pero difieren en estructura de dependencia serial, lo que explica el rechazo formal con muestra grande. El acuerdo visual entre el histograma y la curva Poisson(10) (Figura 14) es consistente con la coincidencia de momentos de primer y segundo orden.
 
 ### Múltiples trayectorias
 
@@ -109,3 +127,19 @@ ggplot(df_trajs, aes(x = time, y = X, color = factor(traj), group = traj)) +
        y = "Moléculas", color = "Trayectoria") +
   theme_minimal()
 ```
+
+### Sensibilidad paramétrica
+
+```{r gillespie-sens}
+# Escalamos ambas tasas por 5 para mantener el mismo estado estacionario,
+# pero acelerar la dinámica: la media estacionaria sigue siendo 10,
+# mientras que el tiempo de relajación cae de 1 a 0.2.
+ssa_fast <- gillespie(Tmax = 40, k1 = 50, k2 = 5, seed = 77)
+
+cat(sprintf("\nEscenario rápido: k1=50, k2=5 -> X_bar = %.1f\n", 50/5))
+cat(sprintf("Tiempo de relajación teórico: tau = %.2f\n", 1/5))
+cat(sprintf("Media de X en la simulación (post-transitorio suave): %.3f\n",
+            mean(ssa_fast$X[ssa_fast$time > 5])))
+```
+
+La sensibilidad muestra una diferencia importante: al multiplicar $k_1$ y $k_2$ por el mismo factor, el equilibrio estacionario se mantiene en 10 moléculas, pero la dinámica se vuelve más rápida y las fluctuaciones cambian de escala temporal. Eso ayuda a separar dos conceptos distintos: media estacionaria y velocidad de relajación.

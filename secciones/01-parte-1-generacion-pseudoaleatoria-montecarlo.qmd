@@ -10,6 +10,8 @@ $$X_{n+1} = (a \cdot X_n + c) \mod m, \quad U_n = X_n / m$$
 
 Se implementan **dos conjuntos de parámetros**: uno de calidad reconocida (glibc/ANSI C) y uno defectuoso (RANDU).
 
+**Hipótesis de trabajo:** el LCG de referencia debe comportarse de forma compatible con una secuencia uniforme sin dependencia serial fuerte, mientras que RANDU debería mostrar fallas estructurales aunque su histograma marginal parezca razonable. Como control, se usa `runif()` de R como referencia empírica.
+
 ### Implementación en R
 
 ```{r lcg-impl-r}
@@ -27,6 +29,9 @@ u_good <- lcg(N, a = 1103515245, c = 12345, m = 2^31)
 
 # Parámetros "malos" — RANDU (IBM, falla espectral en 3D)
 u_bad  <- lcg(N, a = 65539, c = 0, m = 2^31)
+
+# Generador de referencia de R para comparar con los LCG.
+u_ref  <- runif(N)
 ```
 
 ### Implementación en Python
@@ -43,14 +48,15 @@ def lcg(n, seed=42, a=1103515245, c=12345, m=2**31):
 N = 10_000
 u_good_py = lcg(N)
 u_bad_py  = lcg(N, a=65539, c=0, m=2**31)
+u_ref_py  = np.random.default_rng(42).random(N)
 ```
 
 ### Histogramas comparativos
 
 ```{r fig-1-1-1, fig.cap="Histogramas LCG bueno vs RANDU. Ambos parecen uniformes marginalmente."}
 df_hist <- data.frame(
-  valor = c(u_good, u_bad),
-  tipo  = rep(c("Bueno (glibc)", "RANDU"), each = N)
+  valor = c(u_good, u_bad, u_ref),
+  tipo  = rep(c("Bueno (glibc)", "RANDU", "runif()"), each = N)
 )
 
 ggplot(df_hist, aes(x = valor, fill = tipo)) +
@@ -75,13 +81,14 @@ views = [35, 55]
 datasets = [
     (u_good_py, "LCG bueno", "#2E7D32"),
     (u_bad_py,  "RANDU",     "#C62828"),
+    (u_ref_py,  "runif()",   "#1565C0"),
 ]
 
-fig = plt.figure(figsize=(14, 10))
+fig = plt.figure(figsize=(18, 10))
 
 for row, azim in enumerate(views):
   for col, (u, label, color) in enumerate(datasets):
-    ax = fig.add_subplot(2, 2, row * 2 + col + 1, projection='3d')
+    ax = fig.add_subplot(2, 3, row * 3 + col + 1, projection='3d')
     ax.scatter(u[:-2], u[1:-1], u[2:], s=0.25, alpha=0.25, color=color)
     ax.view_init(elev=18, azim=azim)
     ax.set_title(f"{label} · azim={azim}")
@@ -93,7 +100,7 @@ plt.savefig("lcg_triples.png", bbox_inches='tight')
 plt.show()
 ```
 
-Se observa que el LCG "bueno" muestra una nube de puntos sin estructura aparente, mientras que RANDU exhibe claramente planos discretos, lo que indica una mala calidad como generador de números pseudoaleatorios (ver @fig-1-1-2).
+Se observa que el LCG "bueno" muestra una nube de puntos sin estructura aparente, mientras que RANDU exhibe claramente planos discretos, lo que indica una mala calidad como generador de números pseudoaleatorios (ver @fig-1-1-2). La referencia `runif()` se comporta de manera similar al LCG bueno y sirve como control visual para contrastar los dos métodos construidos a mano.
 
 Desde el punto de vista metodológico, este gráfico es más informativo que el histograma porque permite evaluar independencia entre muestras consecutivas. En particular, la vista con azimuth 55° deja más visible la separación en hiperplanos del RANDU, reforzando la idea de que una buena apariencia en 1D no garantiza un buen comportamiento en dimensiones superiores.
 
@@ -116,15 +123,32 @@ Para el LCG 'bueno', el runs test da un p-valor de 0.4839, es decir que no se re
 
 En conjunto, los resultados de los histogramas, el gráfico de triples y el runs test apuntan en la misma dirección: el LCG con parámetros de referencia pasa las verificaciones básicas, mientras que RANDU falla al inspeccionarlo con herramientas más sensibles a la dependencia serial. Esta comparación ilustra por qué el diagnóstico de generadores pseudoaleatorios no debe apoyarse en una sola métrica.
 
+### Uniformidad marginal
+
+```{r ks-test}
+cat("=== KS Test — LCG Bueno ===\n")
+print(ks.test(u_good, "punif"))
+
+cat("\n=== KS Test — RANDU ===\n")
+print(ks.test(u_bad, "punif"))
+
+cat("\n=== KS Test — runif() de R ===\n")
+print(ks.test(u_ref, "punif"))
+```
+
+El test de Kolmogorov–Smirnov complementa al Runs Test porque evalúa la uniformidad marginal. Esto permite mostrar que un generador puede pasar una prueba de distribución univariada y, aun así, fallar en dependencia serial o en estructura geométrica. El control `runif()` funciona aquí como referencia empírica del comportamiento esperado.
+
+En cuanto al período, un LCG con módulo $m = 2^{31}$ puede alcanzar período máximo $2^{31}$ si satisface las condiciones del teorema de Hull–Dobell. El generador de referencia fue elegido precisamente con parámetros clásicos de período completo, mientras que RANDU es conocido por su mala estructura espectral y por no ser una opción confiable para simulación seria.
+
 ---
 
-## 1.2 Estimación de π por Monte Carlo
+## 1.2 Estimación de pi por Monte Carlo
 
 Se generan $N$ puntos uniformes en $[0,1]^2$ y se estima:
 
 $$\hat{\pi} \approx 4 \cdot \frac{\#\{x_i^2 + y_i^2 \le 1\}}{N}$$
 
-```{r fig-1-2-1, fig.cap="Convergencia de la estimación de π. La curva converge al valor teórico (línea roja punteada)."}
+```{r fig-1-2-1, fig.cap="Convergencia de la estimación de pi. La curva converge al valor teórico (línea roja punteada)."}
 set.seed(42)
 N_pi <- 50000
 
@@ -135,15 +159,23 @@ dentro    <- (u1^2 + u2^2) <= 1
 pi_est    <- 4 * cumsum(dentro) / seq_along(dentro)
 pi_final  <- tail(pi_est, 1)
 
+# Banda de confianza aproximada para el error Monte Carlo de pi.
+n_seq <- seq_along(pi_est)
+se_pi <- 4 * sqrt((pi / 4) * (1 - pi / 4) / n_seq)
+pi_lo <- pi - 1.96 * se_pi
+pi_hi <- pi + 1.96 * se_pi
+
 cat(sprintf("Estimación final de pi con N=%d: %.6f (error: %.6f)\n",
             N_pi, pi_final, abs(pi_final - pi)))
 
 # Gráfico de convergencia
-df_pi <- data.frame(n = 1:N_pi, pi_est = pi_est)
+df_pi <- data.frame(n = 1:N_pi, pi_est = pi_est, lo = pi_lo, hi = pi_hi)
 ggplot(df_pi[seq(1, N_pi, by = 50), ], aes(x = n, y = pi_est)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), fill = "#90CAF9", alpha = 0.25) +
   geom_line(color = "#2196F3", linewidth = 0.6) +
   geom_hline(yintercept = pi, color = "red", linetype = "dashed") +
-  labs(title = "Convergencia de la estimación de π",
+  coord_cartesian(ylim = c(2.5, 4)) +
+  labs(title = "Convergencia de la estimación de pi",
        x = "Iteraciones", y = expression(hat(pi))) +
   theme_minimal()
 ```
@@ -170,5 +202,7 @@ La estimación de $\pi$ converge hacia el valor teórico (línea roja punteada e
 El diagrama de dispersión (@fig-1-2-2) confirma geométricamente la lógica del método: la frontera del círculo (línea negra) separa los puntos dentro de los que están fuera. La proporción observada de puntos verdes (dentro) aproxima la razón de áreas, $\frac{\text{área del cuarto de círculo}}{\text{área del cuadrado}} = \frac{\pi/4}{1} = \pi/4$, de donde obtenemos la estimación multiplicando por 4.
 
 Con $N = 50000$ simulaciones, hemos obtenido una estimación muy cercana al valor teórico, con un error del orden de $10^{-3}$. Para aplicaciones que requieran mayor precisión, bastaría escalar $N$ según la tolerancia deseada, confirmando que el método es efectivo aunque computacionalmente costoso en dimensiones altas.
+
+Para visualizar el error Monte Carlo, se agrega una banda de confianza aproximada al 95% alrededor de la curva de convergencia. La banda se ensancha cerca del inicio y se contrae como $1/\sqrt{N}$, mostrando que la incertidumbre muestral cae lentamente pero de forma predecible.
 
 **Conclusión de la Parte 1:** la evidencia empírica sugiere que el generador bueno y la estimación de $\pi$ cumplen con el comportamiento esperado, mientras que RANDU exhibe fallas estructurales incompatibles con su uso en simulación seria. Esta parte muestra la importancia de combinar observación gráfica, pruebas estadísticas e interpretación teórica para evaluar resultados simulados.

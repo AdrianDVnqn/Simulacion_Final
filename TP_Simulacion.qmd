@@ -74,6 +74,9 @@ knitr:
 \end{titlepage}
 
 ```{=latex}
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
 \tableofcontents
 \newpage
 ```

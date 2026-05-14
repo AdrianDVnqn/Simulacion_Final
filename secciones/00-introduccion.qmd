@@ -13,6 +13,17 @@ Este trabajo integra y aplica los principales contenidos de la materia *Simulaci
 
 La materia se cursó en los meses de marzo a mayo de 2026; el trabajo se realizó en mayo de 2026.
 
+Preguntas de investigación:
+
+| Parte | Qué se busca verificar |
+|------|------------------------|
+| 1 | Si un LCG con parámetros adecuados pasa diagnósticos básicos y si Monte Carlo aproxima $\pi$ con error del orden esperado |
+| 2 | Si Metropolis–Hastings reproduce la posterior Beta(8,4) y qué tan eficiente es la cadena |
+| 3 | Si un sistema M/M/1 con $\rho > 1$ se vuelve inestable y cómo se comporta el caso estable comparativo |
+| 4 | Si la simulación Euler–Maruyama del GBM reproduce la distribución terminal teórica |
+| 5 | Si la dinámica de Gillespie converge al equilibrio estacionario esperado |
+| 6 | Si el acoplamiento entre llegadas, atención y biomarcador permite diagnosticar riesgo clínico |
+
 Propósitos del trabajo:
 
 - Presentar implementaciones reproducibles de los métodos vistos en clase.
@@ -24,6 +35,20 @@ Alcance y metodología:
 - Cada sección contiene la formulación del problema, la implementación (código comentado), experimentos numéricos y visualizaciones relevantes.
 - Empleamos simulación estocástica (Monte Carlo, algoritmos de eventos discretos, Euler–Maruyama para SDE y Gillespie para reacciones químicas) y técnicas de diagnóstico cuando aplica.
 - Se favorece la reproducibilidad: todas las semillas están fijadas (`set.seed(42)` en R, `np.random.seed(42)` en Python) y las dependencias principales se instalan desde los bloques `setup` si faltan.
+
+Notación básica:
+
+| Símbolo | Significado |
+|--------|-------------|
+| $\lambda$ | tasa de llegadas o intensidad de eventos |
+| $\mu$ | tasa de servicio o parámetro de deriva, según el modelo |
+| $\rho$ | utilización del sistema, usualmente $\lambda/\mu$ |
+| $\sigma$ | volatilidad del proceso o desviación estándar de la propuesta |
+| $\pi$ | constante matemática aproximada por Monte Carlo |
+| $S_t$ | valor del proceso GBM en el tiempo $t$ |
+| $X_t$ | estado del sistema en tiempo $t$ para colas o SSA |
+
+La sección integradora es opcional y se incluyó porque permite conectar explícitamente varios modelos vistos por separado en un escenario de atención y biomarcador, lo que sirve como cierre aplicado del trabajo.
 
 Herramientas y formato:
 

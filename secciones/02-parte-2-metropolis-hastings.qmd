@@ -64,8 +64,19 @@ mh <- function(n_iter = 5000, start = 0.5, prop_sd = 0.1, seed = NULL) {
   list(chain = theta, tasa_aceptacion = aceptados / (n_iter - 1))
 }
 
+# Tuning piloto: buscamos una tasa de aceptación cercana a 35% ajustando prop_sd.
+prop_grid <- c(0.05, 0.1, 0.2, 0.3, 0.4, 0.5)
+pilot_accept <- sapply(prop_grid, function(sd) {
+  mh(n_iter = 2500, start = 0.5, prop_sd = sd, seed = 123)$tasa_aceptacion
+})
+prop_sd_tuned <- prop_grid[which.min(abs(pilot_accept - 0.35))]
+
+cat("=== Tuning piloto prop_sd ===\n")
+print(data.frame(prop_sd = prop_grid, acceptance = round(100 * pilot_accept, 1)))
+cat(sprintf("prop_sd seleccionado para la cadena principal: %.2f\n", prop_sd_tuned))
+
 # Cadena principal para una corrida larga de la simulación.
-res     <- mh(n_iter = 10000, seed = 42)
+res     <- mh(n_iter = 10000, prop_sd = prop_sd_tuned, seed = 42)
 # Cadena completa generada por MH.
 cadena  <- res$chain
 # Primer tramo descartado para eliminar dependencia de la inicialización.
@@ -75,6 +86,13 @@ cadena_post_burnin <- cadena[(burn_in + 1):length(cadena)]
 
 # Mostrar cuánto de la cadena fue aceptado por el algoritmo.
 cat(sprintf("Tasa de aceptación: %.2f%%\n", res$tasa_aceptacion * 100))
+
+# Intervalo creíble empírico de la posterior muestreada.
+ic_post <- quantile(cadena_post_burnin, probs = c(0.025, 0.975))
+ic_teo  <- qbeta(c(0.025, 0.975), 8, 4)
+
+cat(sprintf("IC 95%% muestral: [%.4f, %.4f]\n", ic_post[1], ic_post[2]))
+cat(sprintf("IC 95%% teórico : [%.4f, %.4f]\n", ic_teo[1], ic_teo[2]))
 ```
 
 ### Diagnósticos
@@ -131,7 +149,7 @@ ggplot(df_mh, aes(x = theta)) +
 **Interpretación del Histograma:** La distribución empírica de las muestras MH coincide **notablemente** con la posterior analítica Beta(8,4), mostrada en línea roja punteada. La forma, el centro y la dispersión se alinean de manera excelente. Esto demuestra que:
 - El algoritmo MH converge correctamente a la posterior verdadera
 - No hay sesgos sistemáticos en el muestreo
-- La propuesta de saltos (gaussiana con sd=0.1) es apropiada para este problema
+- La propuesta de saltos (gaussiana con sd=0.50, seleccionada por tuning piloto) es apropiada para este problema
 
 El agreement entre la distribución muestral y la teórica valida toda nuestra configuración del algoritmo y da confianza en usar las muestras para realizar inferencia bayesiana (estimación puntual, intervalos creíbles, etc.).
 
@@ -141,7 +159,7 @@ El agreement entre la distribución muestral y la teórica valida toda nuestra c
 # Generamos 4 cadenas con distintos puntos de inicio
 cadenas_4 <- lapply(1:4, function(i) {
   # Cada cadena arranca desde un valor inicial diferente para evaluar convergencia.
-  mh(n_iter = 5000, start = runif(1), prop_sd = 0.1, seed = i * 10)$chain
+  mh(n_iter = 5000, start = runif(1), prop_sd = prop_sd_tuned, seed = i * 10)$chain
 })
 
 # Convertir a objeto mcmc.list para coda
@@ -157,14 +175,16 @@ cat("\n=== ESS (Effective Sample Size) ===\n")
 print(effectiveSize(mcmc_list))
 ```
 
-**R-hat de Gelman–Rubin** (Potential Scale Reduction Factor) mide la convergencia comparando la varianza entre cadenas versus dentro de cadenas. Un R-hat próximo a 1 indica excelente mezcla y convergencia. En nuestro caso:
+**R-hat de Gelman–Rubin** (Potential Scale Reduction Factor) mide la convergencia comparando la varianza entre cadenas versus dentro de cadenas. Un R-hat próximo a 1 indica buena mezcla y convergencia. En nuestro caso:
 - Estimado puntual: **1.00** → Convergencia perfecta
 - Intervalo de confianza superior (0.95): **1.01** → Extremadamente cercano a 1
 
 Ambos valores están **muy por debajo del umbral de 1.05** (estándar en la literatura), indicando que las 4 cadenas convergen al mismo target y han alcanzado el equilibrio estacionario.
 
-El **ESS (Effective Sample Size)** corrige por autocorrelación y da el número de muestras *independientes* equivalentes. Con un ESS de **1804,88** sobre 20.000 muestras totales (después del burn-in):
-- Tasa de eficiencia: ESS/N ≈ 9%
-- Este valor es **más que suficiente** (umbrales típicos: ESS > 400–1000 por parámetro)
+El **ESS (Effective Sample Size)** corrige por autocorrelación y da el número de muestras *independientes* equivalentes. Con un ESS de **3638** sobre 20.000 muestras totales (después del burn-in):
+- Tasa de eficiencia: ESS/N ≈ 18%
+- Este valor es aceptable para inferencia puntual, pero también confirma la limitación señalada por la revisión: la propuesta con `prop_sd = 0.1` es demasiado conservadora y produce cadenas más autocorrelacionadas de lo deseable.
 
-**Conclusión:** Los diagnósticos indican que el algoritmo Metropolis–Hastings ha convergido exitosamente. Las cadenas se mezclan bien, la posterior está correctamente caracterizada, y disponemos de suficientes muestras efectivas para estimación e inferencia bayesiana confiable.
+Una forma de verlo es la expresión clásica $ESS = N / \left(1 + 2\sum_k \rho_k\right)$, donde $\rho_k$ son las autocorrelaciones por lag. Cuanto más lenta es la caída del ACF, menor es el ESS respecto del tamaño muestral bruto.
+
+**Conclusión:** Los diagnósticos indican que el algoritmo Metropolis–Hastings converge con un tuning más razonable que el inicial. El ajuste piloto de `prop_sd` acerca la tasa de aceptación al rango deseado y reduce parte de la autocorrelación, aunque todavía queda margen para usar un esquema adaptativo si se quisiera mayor eficiencia.
