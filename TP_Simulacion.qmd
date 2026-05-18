@@ -10,6 +10,7 @@ format:
       text: |
         \usepackage[utf8]{inputenc}
         \usepackage{xcolor}
+        \usepackage{placeins}
         % Definición del azul institucional proporcionado
         \definecolor{australblue}{HTML}{1924AD} 
   html:
@@ -132,6 +133,4 @@ np.random.seed(42)
 
 {{< include secciones/06-parte-integradora-opcional.qmd >}}
 
-{{< include secciones/06-resumen.qmd >}}
-
-{{< include secciones/07-referencias.qmd >}}
+{{< include secciones/07-resumen.qmd >}}

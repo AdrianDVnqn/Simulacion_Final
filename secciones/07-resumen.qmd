@@ -30,10 +30,25 @@ resumen %>%
 	Observacion = "Observación"
   ) %>%
   opt_align_table_header("left") %>%
-  tab_options(table.font.size = px(10), table.cell.padding = px(6)) %>%
-  fmt_markdown(columns = c(Resultado, Observacion))
+  cols_width(
+    Parte ~ pct(14),
+    Parametros ~ pct(18),
+    Resultado ~ pct(28),
+    Observacion ~ pct(40)
+  ) %>%
+  tab_options(
+    table.width = pct(100),
+    table.font.size = px(13),
+    heading.padding = px(2),
+    column_labels.padding = px(2),
+    data_row.padding = px(3),
+    latex.use_longtable = TRUE
+  ) %>%
+  fmt_markdown(columns = c(Parametros, Resultado, Observacion))
 ```
+
 **Síntesis y recomendaciones:**
 
 - La mayoría de los métodos implementados reproduce las propiedades teóricas esperadas (MC, MH, GBM, SSA), salvo generadores numéricos con parámetros defectuosos (RANDU) y escenarios de colas mal parametrizados (M/M/1 con ρ>1).
 - Para robustez: aumentar réplicas donde el interés es en momentos (GBM, M/M/1 estable) y usar tuning/adaptación en MCMC para elevar el ESS.
+
