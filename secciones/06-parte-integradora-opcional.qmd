@@ -126,8 +126,10 @@ ggplot(df_integrada, aes(x = wait, y = biomarker, color = late)) +
 
 ## Conclusión e Interpretación
 
-La simulación integra varios componentes de la materia: genera números pseudoaleatorios para los tiempos de llegada y servicio, usa el biomarcador que sigue un proceso estocástico continuo, y combina eventos discretos con una dinámica continua. A diferencia de la versión inestable, aquí el sistema se parametriza en un régimen estable con $\rho = 5/8 = 0.625 < 1$, lo que permite interpretar los resultados en equilibrio aproximado.
+La simulación combina los modelos de llegada, atención y evolución del biomarcador y, bajo los parámetros usados (\(\rho=0.625<1\)), produce resultados que pueden interpretarse en equilibrio aproximado.
 
-Los resultados muestran una asociación positiva entre tiempo de espera y biomarcador al momento de atención: cuando la cola se alarga, aumenta la probabilidad de que el paciente sea atendido con el biomarcador ya por encima del umbral. Esta asociación es esperable desde el punto de vista clínico: a mayor demora en la atención, aumenta el tiempo de evolución del biomarcador en el paciente.
+Encontramos una relación clara y esperable desde lo clínico: a más tiempo de espera, mayor probabilidad de que el biomarcador supere el umbral al momento de la atención. En otras palabras, retrasos en la atención dan más tiempo al biomarcador para evolucionar, lo que incrementa el riesgo de alcanzar niveles críticos.
 
-Desde una perspectiva clínica, esto sugiere que **una política de atención más ágil o una mayor capacidad de servicio reduce el riesgo de superar el umbral crítico antes de ser atendido**. En el régimen actual con intensidad media de llegadas $E[\lambda(t)] = 5$ pacientes/hora y servicio $\mu = 8$, la cola permanece estable y el porcentaje de pacientes en riesgo puede interpretarse como una proporción estacionaria del sistema, no como un artefacto de sobrecarga.
+Esto tiene implicaciones prácticas: medidas que acorten la espera, por ejemplo, aumentar capacidad de servicio, optimizar flujos o introducir priorización, deberían reducir la proporción de pacientes en riesgo. En el escenario simulado (\(E[\lambda(t)]=5\), \(\mu=8\)) la cola es estable, por lo que la fracción observada de pacientes en riesgo puede entenderse como una proporción estacionaria del sistema y no simplemente como un efecto de sobrecarga temporal.
+
+Para trabajos futuros recomendamos probar políticas de priorización, explorar distintos niveles de capacidad y realizar análisis de sensibilidad sobre la distribución de los tiempos de servicio y la dinámica del biomarcador, con el fin de cuantificar el efecto de intervenciones sobre el riesgo clínico.

@@ -97,11 +97,12 @@ simulate_mm1 <- function(lambda, mu, T_max, seed = 42) {
   )
 }
 
-# Ejecutar simulación con parámetros del problema: λ=10, μ=4, T=8 horas
+# Ejecutar simulación con parámetros del problema: $\lambda=10$, $\mu=4$, T=8 horas
+
 res_mm1 <- simulate_mm1(lambda = 10, mu = 4, T_max = 8)
 
 # Imprimir estadísticas resumidas
-cat("=== SIMULACIÓN M/M/1 (λ=10, μ=4, T=8h) ===\n")
+cat("=== SIMULACIÓN M/M/1 (lambda=10, mu=4, T=8h) ===\n")
 cat(sprintf("Llegadas:    %d clientes\n", res_mm1$arrivals))
 cat(sprintf("Salidas:     %d clientes\n", res_mm1$departures))
 cat(sprintf("En sistema:  %d clientes (cola acumulada, confirma ρ > 1)\n",
@@ -125,7 +126,7 @@ La simulación captura el comportamiento dinámico del sistema a lo largo de las
 - **Fase de saturación (4–8h):** La cola continúa creciendo sin estabilizarse, reflejando la inestabilidad del sistema ($\rho > 1$).
 
 Los números resumidos muestran:
-- **68 llegadas** en 8 horas (tasa de 8.5 clientes/hora, cercana a λ=10)
+- **68 llegadas** en 8 horas (tasa de 8.5 clientes/hora, cercana a $\lambda=10$)
 - **31 salidas** en 8 horas (mucho menor que las llegadas)
 - **37 clientes acumulados** en el sistema al final, validando visualmente el crecimiento exponencial en el gráfico
 
@@ -137,7 +138,7 @@ Como solo se presenta una réplica, estos valores deben leerse como una realizac
 # ANÁLISIS TEÓRICO DEL SISTEMA
 # ===============================
 
-# Verificar estabilidad del sistema inestable simulado (λ=10, μ=4)
+# Verificar estabilidad del sistema inestable simulado ($\lambda=10$, $\mu=4$)
 # En teoría de colas, ρ = λ/μ es el factor de utilización del servidor:
 #   Si ρ < 1: sistema estable, cola converge a equilibrio
 #   Si ρ > 1: sistema inestable, cola crece sin límite
@@ -152,7 +153,7 @@ cat("Implicación: cola crece indefinidamente, no hay equilibrio\n")
 # COMPARACIÓN: Crear un sistema estable modificando λ
 # Si reducimos llegadas a λ=3 (manteniendo μ=4), entonces ρ=3/4=0.75 < 1
 cat("\n=== CASO DE COMPARACIÓN: SISTEMA ESTABLE ===\n")
-cat("Simulamos con λ=3, μ=4 (ρ=0.75 < 1):\n")
+cat("Simulamos con lambda=3, mu=4 (rho=0.75 < 1):\n")
 
 res_estable <- simulate_mm1(lambda = 3, mu = 4, T_max = 8)
 rho_s <- 3 / 4
@@ -191,7 +192,7 @@ for (r in seq_len(replicas)) {
 }
 
 ci_lq <- quantile(lq_sim, probs = c(0.025, 0.975))
-cat("\n=== Validación con 100 réplicas (sistema estable λ=3, μ=4) ===\n")
+cat("\n=== Validación con 100 réplicas (sistema estable lambda=3, mu=4) ===\n")
 cat(sprintf("Lq teórico = %.4f\n", Lq))
 cat(sprintf("Lq simulado promedio = %.4f\n", mean(lq_sim)))
 cat(sprintf("IC 95%% del Lq simulado = [%.4f, %.4f]\n", ci_lq[1], ci_lq[2]))

@@ -35,7 +35,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Parámetros del GBM.
-# μ controla la deriva promedio del proceso, σ mide la intensidad de la volatilidad
+# $\mu$ controla la deriva promedio del proceso, $\sigma$ mide la intensidad de la volatilidad
 # y S0 fija el nivel inicial desde el que parten todas las trayectorias.
 mu    = 0.05
 sigma = 0.20
@@ -78,7 +78,7 @@ q05 = np.percentile(S_em, 5, axis=1)
 q95 = np.percentile(S_em, 95, axis=1)
 ax.fill_between(t, q05, q95, color='steelblue', alpha=0.18, label='Banda simulada 5%-95%')
 
-# Media teórica del GBM: E[S_t] = S0 e^{μt}.
+# Media teórica del GBM: $\mathbb{E}[S_t] = S_0 e^{\mu t}$.
 ax.plot(t, S0 * np.exp(mu * t), 'r--', linewidth=2, label='Media teórica')
 ax.set_title("Trayectorias del GBM")
 ax.set_xlabel("Tiempo (años)")
@@ -175,4 +175,4 @@ También conviene remarcar que Euler-Maruyama es una aproximación numérica. Pa
 
 La simulación confirma que el Movimiento Browniano Geométrico es un modelo adecuado para procesos positivos con crecimiento medio y fluctuaciones aleatorias proporcionales al nivel. Las trayectorias simuladas muestran variabilidad creciente, la distribución terminal tiene la forma esperada y las magnitudes agregadas se alinean con la teoría.
 
-Esta sección ilustra cómo un modelo continuo puede analizarse simultáneamente desde tres niveles: trayectoria, distribución y momentos. Además, comparar Euler-Maruyama contra la solución exacta permite cuantificar el sesgo numérico y no solo describir el proceso. Esa combinación de simulación e interpretación es la que hace útil al GBM como herramienta básica para estudiar fenómenos con incertidumbre continua.
+Esta sección muestra cómo un modelo continuo puede analizarse simultáneamente desde tres niveles: trayectoria, distribución y momentos. Además, comparar Euler-Maruyama contra la solución exacta permite cuantificar el sesgo numérico y no solo describir el proceso. Esa combinación de simulación e interpretación es la que hace útil al GBM como herramienta básica para estudiar fenómenos con incertidumbre continua.

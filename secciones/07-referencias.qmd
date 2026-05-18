@@ -1,8 +1,0 @@
-\newpage
-
-# Referencias
-
-- Law, A. M. (2015). *Simulation Modeling and Analysis* (5th ed.). McGraw-Hill.
-- Robert, C. P. & Casella, G. (2004). *Monte Carlo Statistical Methods*. Springer.
-- Gillespie, D. T. (1977). Exact stochastic simulation of coupled chemical reactions. *Journal of Physical Chemistry*, 81(25), 2340–2361.
-- Gelman, A. et al. (2013). *Bayesian Data Analysis* (3rd ed.). CRC Press.

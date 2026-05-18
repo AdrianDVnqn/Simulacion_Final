@@ -151,12 +151,12 @@ cat(sprintf("Media de X en la simulación (post-transitorio suave): %.3f\n",
 La sensibilidad muestra una diferencia importante: al multiplicar $k_1$ y $k_2$ por el mismo factor, el equilibrio estacionario se mantiene en 10 moléculas, pero la dinámica se vuelve más rápida y las fluctuaciones cambian de escala temporal. Eso ayuda a separar dos conceptos distintos: media estacionaria y velocidad de relajación.
 ## Conclusiones
 
-El algoritmo de Gillespie SSA es un método exacto y eficiente para simular sistemas estocásticos de reacciones químicas. A través de este trabajo hemos verificado:
+En este ejercicio comprobamos que la implementación del algoritmo de Gillespie reproduce de forma práctica las propiedades esperadas del modelo simple de producción y degradación de mRNA.
 
-- **Distribución estacionaria:** La distribución empírica simulada (después del burn-in) coincide visualmente con la Poisson(10) teórica. El test $\chi^2$ rechaza formalmente, pero esto refleja diferencias metodológicas (time-average vs i.i.d.) y no invalida la simulación.
-- **Momentos:** Media y varianza simuladas ($\approx 10$ y $\approx 10$ respectivamente) coinciden con las predicciones teóricas para un proceso de nacimiento-muerte.
-- **Dinámicas:** Las trayectorias individuales muestran fluctuaciones estocásticas realistas alrededor del equilibrio. Múltiples realizaciones convergen al mismo valor medio, ilustrando la naturaleza estocástica del proceso.
-- **Sensibilidad paramétrica:** Al escalar tasas de reacción, el equilibrio se conserva pero la velocidad de relajación cambia, separando claramente dinámica rápida de equilibrio.
-- **Aplicabilidad:** El método es fundamental para modelar sistemas biológicos donde la discretitud de moléculas y la aleatoriedad son relevantes, complementando los enfoques deterministas.
+- La distribución en estado estacionario, observada como tiempo promedio de permanencia en cada estado, concuerda visualmente con la Poisson(10). El test estadístico puede rechazar la hipótesis por dependencia temporal en las observaciones, pero la media y la varianza coinciden con lo esperado.
 
-Este ejercicio cierra la exploración de métodos estocásticos fundamentales y valida la implementación de Gillespie SSA como herramienta de simulación confiable para sistemas reaccionarios.
+- Las trayectorias muestran la variabilidad típica de un proceso estocástico: distintas realizaciones oscilan alrededor del mismo nivel medio y, a largo plazo, se estabilizan en el valor teórico $k_1/k_2$.
+
+- Al aumentar por igual las tasas de producción y degradación se mantiene el valor estacionario, pero el sistema responde más rápido (menor tiempo de relajación), lo que confirma la predicción teórica $\tau=1/k_2$.
+
+La simulación funciona correctamente para este modelo y es útil para explorar comportamientos estocásticos. Para trabajos posteriores sugerimos probar condiciones iniciales distintas, realizar análisis de sensibilidad más detallados y, cuando sea apropiado, comparar con aproximaciones deterministas o métodos aproximados (por ejemplo, tau-leaping) para evaluar compromisos entre precisión y eficiencia.
