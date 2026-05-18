@@ -2,7 +2,7 @@
 
 # Parte 3 — Simulación de Eventos Discretos (M/M/1)
 
-## 3.1 Introducción a Sistemas M/M/1
+## Introducción a Sistemas M/M/1
 
 Un sistema **M/M/1** es un modelo de colas donde:
 - **M** (primer símbolo): Las *llegadas* de clientes siguen un proceso de Poisson (tiempos entre llegadas exponenciales)
@@ -25,7 +25,7 @@ Este es el modelo de colas más simple pero fundamental en teoría de colas y es
 
 > **Caso estable:** Con $c = 3$ servidores en paralelo, $\rho/c = 2.5/3 \approx 0.83 < 1$, y el sistema alcanza un equilibrio estacionario.
 
-## 3.2 Algoritmo de Simulación de Eventos Discretos
+## Algoritmo de Simulación de Eventos Discretos
 
 El enfoque de **simulación por eventos** mantiene un reloj de simulación y procesa eventos ordenados por tiempo:
 
@@ -116,7 +116,7 @@ ggplot(res_mm1$queue_length, aes(x = time, y = n)) +
   theme_minimal()
 ```
 
-## 3.3 Resultados de la Simulación
+## Resultados de la Simulación
 
 La simulación captura el comportamiento dinámico del sistema a lo largo de las 8 horas. El gráfico muestra de forma clara cómo evoluciona la longitud de la cola en tiempo real:
 
@@ -255,7 +255,7 @@ ggplot(df_mm1_plot, aes(x = time, y = n)) +
   theme_minimal()
 ```
 
-## 3.4 Conclusión
+## Conclusión
 
 **Sistema Inestable (ρ = 2.5 > 1):**
 

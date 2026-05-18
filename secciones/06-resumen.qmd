@@ -1,14 +1,21 @@
-\newpage
+```{=latex}
+\clearpage
+```
 
 # Resumen de Resultados
 
-| Sección | Resultado clave | Comparación teórica |
-|---------|-----------------|---------------------|
-| LCG bueno | Runs test p > 0.05 | Pasa la prueba de aleatoriedad |
-| LCG RANDU | Estructura de planos en 3D | Falla espectral conocida |
-| Monte Carlo pi | 3.134160 (N=50.000) | π = 3.14159... (error ≈ 0.007433) |
-| MH — Media theta | 0.6667 | E[Beta(8,4)] = 0.667 |
-| MH — R-hat | 1.00 [IC 95%: 1.01] | < 1.05 Convergencia excelente |
-| M/M/1 | ρ = 2.5 (inestable) | Sistema diverge sin c servidores |
-| GBM E[S_T] | 105.13 (T=1 año) | S₀·e^(μT) = 100·e^0.05 = 105.13 |
-| SSA — Media X | 10.02 | k₁/k₂ = 10 Estado estacionario |
+| Parte | Parámetros clave | Resultado clave | Observación |
+|------:|-----------------|-----------------|------------|
+| 1 — LCG (glibc) | a=1103515245, m=2^31 | Runs test: p > 0.05 | Marginalmente uniforme y sin dependencia fuerte detectada |
+| 1 — RANDU | a=65539, m=2^31 | Estructura en planos (3D) | Falla espectral: no apto para simulación rigurosa |
+| 1 — Monte Carlo $\pi$ | N = 50 000 | $\hat{\pi} = 3.13416$ (error ≈ $7.4\times 10^{-3}$) | Convergencia ~ $O(1/\sqrt{N})$; ilustración del procedimiento |
+| 2 — Metropolis–Hastings | n=10, k=7, prior Beta(1,1) | $\hat{\theta} \approx 0.667$; R-hat $\approx 1.00$; ESS $\approx 3638$ | MH reproduce Beta(8,4); tuning recomendado para mejorar ESS |
+| 3 — M/M/1 | $\lambda=10$, $\mu=4$ | $\rho = 2.5$ → inestable | Caso probado: cola crece; solución práctica: más servidores (M/M/c) |
+| 4 — GBM (SDE) | $\mu=0.05$, $\sigma=0.2$, $S_0=100$, $T=1$ | $\mathbb{E}[S_T] \approx 105.13$ | Euler–Maruyama aproxima la media; comparar con solución exacta para sesgo de discretización |
+| 5 — Gillespie SSA | $k_1=10$, $k_2=1$ | $\mathbb{E}[X] \approx 10$; $\mathrm{Var}(X) \approx 10$ | Distribución time-average visualmente consistente con Poisson(10); $\chi^2$ rechaza por dependencia temporal |
+| Integradora | NHPP + M/M/1 + biomarcador | % pacientes con biomarcador $\ge$ umbral | Caso estable ($\rho\approx0.625$) muestra relación espera–riesgo clínica |
+
+**Síntesis y recomendaciones:**
+
+- La mayoría de los métodos implementados reproduce las propiedades teóricas esperadas (MC, MH, GBM, SSA), salvo generadores numéricos con parámetros defectuosos (RANDU) y escenarios de colas mal parametrizados (M/M/1 con ρ>1).
+- Para robustez: aumentar réplicas donde el interés es en momentos (GBM, M/M/1 estable) y usar tuning/adaptación en MCMC para elevar el ESS.

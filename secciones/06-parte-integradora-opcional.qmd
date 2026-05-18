@@ -126,7 +126,7 @@ ggplot(df_integrada, aes(x = wait, y = biomarker, color = late)) +
 
 ## Conclusión e Interpretación
 
-La simulación integra todos los componentes de la materia: genera números pseudoaleatorios para los tiempos de llegada y servicio (Unidad I), usa el biomarcador que sigue un proceso estocástico continuo (Unidad IV), y combina eventos discretos con una dinámica continua (Unidades III-IV). A diferencia de la versión inestable, aquí el sistema se parametriza en un régimen estable con $\rho = 5/8 = 0.625 < 1$, lo que permite interpretar los resultados en equilibrio aproximado.
+La simulación integra varios componentes de la materia: genera números pseudoaleatorios para los tiempos de llegada y servicio, usa el biomarcador que sigue un proceso estocástico continuo, y combina eventos discretos con una dinámica continua. A diferencia de la versión inestable, aquí el sistema se parametriza en un régimen estable con $\rho = 5/8 = 0.625 < 1$, lo que permite interpretar los resultados en equilibrio aproximado.
 
 Los resultados muestran una asociación positiva entre tiempo de espera y biomarcador al momento de atención: cuando la cola se alarga, aumenta la probabilidad de que el paciente sea atendido con el biomarcador ya por encima del umbral. Esa relación tiene sentido clínico porque la espera prolongada funciona como un proxy de demora en la atención.
 

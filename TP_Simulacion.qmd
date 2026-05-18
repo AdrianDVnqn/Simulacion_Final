@@ -19,7 +19,7 @@ format:
     code-fold: true
     theme: cosmo
 execute:
-  echo: true
+  echo: false
   warning: false
   message: false
   cache: false

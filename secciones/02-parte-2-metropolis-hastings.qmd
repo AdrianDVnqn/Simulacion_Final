@@ -2,11 +2,14 @@
 
 # Parte 2 — Metropolis–Hastings y Bayesian Inference
 
-## 2.1 Posterior beta analítica
+## Introducción
+
+En esta sección se presenta la posterior analítica de un ejemplo binomial simple (Beta conjugada) que usaremos como referencia para validar el muestreo Metropolis–Hastings.
+
+## Posterior teórica
 
 Sea una moneda con $n = 10$ lanzamientos y $k = 7$ caras, con prior $\text{Beta}(1, 1)$ (uniforme).
 La posterior conjugada es:
-
 $$\theta \mid \text{datos} \sim \text{Beta}(\alpha + k,\ \beta + n - k) = \text{Beta}(8, 4)$$
 
 ```{r fig-2-1-1, fig.cap="Posterior analítica Beta(8,4)."}
@@ -26,7 +29,7 @@ ggplot(data.frame(theta = theta_grid, densidad = posterior),
 
 La media posterior es $\hat{\theta} = 8/12 \approx 0{.}667$.
 
-## 2.2 Implementación Metropolis–Hastings
+## Implementación Metropolis–Hastings
 
 ```{r mh-impl}
 # Implementación básica de Metropolis-Hastings para muestrear la posterior de theta.
@@ -188,3 +191,12 @@ El **ESS (Effective Sample Size)** corrige por autocorrelación y da el número 
 Una forma de verlo es la expresión clásica $ESS = N / \left(1 + 2\sum_k \rho_k\right)$, donde $\rho_k$ son las autocorrelaciones por lag. Cuanto más lenta es la caída del ACF, menor es el ESS respecto del tamaño muestral bruto.
 
 **Conclusión:** Los diagnósticos indican que el algoritmo Metropolis–Hastings converge con un tuning más razonable que el inicial. El ajuste piloto de `prop_sd` acerca la tasa de aceptación al rango deseado y reduce parte de la autocorrelación, aunque todavía queda margen para usar un esquema adaptativo si se quisiera mayor eficiencia.
+## Conclusiones
+
+Este trabajo ha demostrado que el algoritmo Metropolis–Hastings es capaz de reproducir de manera efectiva la posterior Beta(8,4) a partir de datos binomiales. Los puntos clave son:
+
+- **Convergencia:** La cadena MCMC converge correctamente a la posterior, como se evidencia en el R-hat ≈ 1.00 y la coincidencia visual entre el histograma muestral y la densidad analítica.
+- **Validación de momentos:** La media posterior estimada (≈ 0.667) se alinea con el valor teórico 8/12, confirmando que el muestreo es correcto.
+- **Diagnósticos completos:** El traceplot muestra buen mixing, el ACF exhibe decorrelación rápida (aunque con margen de mejora), y la distribución multivariada es consistente.
+- **Limitaciones prácticas:** Un ESS de ~3638 sobre 20.000 muestras sugiere que la propuesta puede ser más eficiente con tuning adaptativo o esquemas más sofisticados.
+- **Aplicabilidad:** El método es robusto para problemas unidimensionales simples y sirve como base conceptual para modelos más complejos en inferencia bayesiana.

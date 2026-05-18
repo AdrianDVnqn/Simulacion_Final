@@ -2,6 +2,10 @@
 
 # Parte 5 — Gillespie SSA
 
+## Introducción
+
+El Algoritmo de Simulación Estocástica (SSA) de Gillespie es un método exacto para simular procesos estocásticos descritos por ecuaciones maestras, particularmente útil en sistemas químicos y biológicos donde la estocasticidad es relevante. A diferencia de métodos numéricos deterministas, Gillespie genera trayectorias completas de sistemas donde los eventos ocurren de forma discreta en el tiempo (saltos). **Hipótesis de trabajo:** implementaremos el algoritmo para un sistema simple de producción y degradación de mRNA, verificando que la distribución estacionaria simulada es compatible con la teoría, que los momentos (media y varianza) coinciden con lo esperado, y que el comportamiento dinámico refleja correctamente la velocidad de relajación del sistema.
+
 ## Sistema de transcripción de mRNA
 
 El sistema modela la producción y degradación de mRNA:
@@ -109,6 +113,8 @@ El test $\chi^2$ rechaza formalmente la hipótesis de que la distribución empí
 
 ### Múltiples trayectorias
 
+Debido a la naturaleza estocástica del proceso, diferentes simulaciones generan trayectorias distintas incluso con los mismos parámetros. A continuación se muestran cinco realizaciones independientes del sistema, cada una partiendo de $X(0) = 0$, para ilustrar la variabilidad inherente y cómo todas convergen al mismo valor medio estacionario ($\bar{X} = 10$).
+
 ```{r fig-5-1-3, fig.cap="Cinco trayectorias independientes del SSA de Gillespie."}
 # 5 trayectorias independientes
 trajs <- lapply(1:5, function(i) {
@@ -143,3 +149,14 @@ cat(sprintf("Media de X en la simulación (post-transitorio suave): %.3f\n",
 ```
 
 La sensibilidad muestra una diferencia importante: al multiplicar $k_1$ y $k_2$ por el mismo factor, el equilibrio estacionario se mantiene en 10 moléculas, pero la dinámica se vuelve más rápida y las fluctuaciones cambian de escala temporal. Eso ayuda a separar dos conceptos distintos: media estacionaria y velocidad de relajación.
+## Conclusiones
+
+El algoritmo de Gillespie SSA es un método exacto y eficiente para simular sistemas estocásticos de reacciones químicas. A través de este trabajo hemos verificado:
+
+- **Distribución estacionaria:** La distribución empírica simulada (después del burn-in) coincide visualmente con la Poisson(10) teórica. El test $\chi^2$ rechaza formalmente, pero esto refleja diferencias metodológicas (time-average vs i.i.d.) y no invalida la simulación.
+- **Momentos:** Media y varianza simuladas ($\approx 10$ y $\approx 10$ respectivamente) coinciden con las predicciones teóricas para un proceso de nacimiento-muerte.
+- **Dinámicas:** Las trayectorias individuales muestran fluctuaciones estocásticas realistas alrededor del equilibrio. Múltiples realizaciones convergen al mismo valor medio, ilustrando la naturaleza estocástica del proceso.
+- **Sensibilidad paramétrica:** Al escalar tasas de reacción, el equilibrio se conserva pero la velocidad de relajación cambia, separando claramente dinámica rápida de equilibrio.
+- **Aplicabilidad:** El método es fundamental para modelar sistemas biológicos donde la discretitud de moléculas y la aleatoriedad son relevantes, complementando los enfoques deterministas.
+
+Este ejercicio cierra la exploración de métodos estocásticos fundamentales y valida la implementación de Gillespie SSA como herramienta de simulación confiable para sistemas reaccionarios.

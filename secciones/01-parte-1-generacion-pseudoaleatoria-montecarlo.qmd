@@ -11,10 +11,23 @@ $$X_{n+1} = (a \cdot X_n + c) \mod m, \quad U_n = X_n / m$$
 Se implementan **dos conjuntos de parámetros**: uno de calidad reconocida (glibc/ANSI C) y uno defectuoso (RANDU).
 
 **Hipótesis de trabajo:** el LCG de referencia debe comportarse de forma compatible con una secuencia uniforme sin dependencia serial fuerte, mientras que RANDU debería mostrar fallas estructurales aunque su histograma marginal parezca razonable. Como control, se usa `runif()` de R como referencia empírica.
+## Introducción
+
+Los números pseudoaleatorios son fundamentales en simulación estocástica. Un Generador Congruencial Lineal (LCG) implementa la recurrencia:
+
+$$X_{n+1} = (a \cdot X_n + c) \mod m, \quad U_n = X_n / m$$
+
+El método es simple pero su calidad depende críticamente de los parámetros. **Hipótesis de trabajo:** un LCG con parámetros de referencia (glibc) debe pasar diagnósticos básicos (uniformidad, independencia serial), mientras que un generador defectuoso (RANDU) exhibirá fallas estructurales incluso si marginalmenteparece uniforme.
+
+## Metodología — Diagnóstico de LCG
+
+Se implementan dos conjuntos de parámetros: uno de calidad reconocida (glibc/ANSI C) y uno defectuoso (RANDU), con control `runif()` de R.
 
 ### Implementación en R
 
-```{r lcg-impl-r}
+A continuación se muestra la implementación en R del LCG usado como generador. Se incluye el código fuente (mostrado para referencia): los pasos básicos son inicializar la semilla, iterar la recurrencia y normalizar por `m`.
+
+```{r lcg-impl-r, echo=TRUE}
 lcg <- function(n, seed = 42, a, c, m) {
   x <- numeric(n)
   x[1] <- (a * seed + c) %% m
@@ -36,7 +49,9 @@ u_ref  <- runif(N)
 
 ### Implementación en Python
 
-```{python lcg-impl-py}
+La implementación en Python replica la lógica del LCG en R; la principal diferencia es la gestión del bucle y el retorno como `numpy.array`.
+
+```{python lcg-impl-py, echo=TRUE}
 def lcg(n, seed=42, a=1103515245, c=12345, m=2**31):
     x = seed
     seq = []
@@ -205,4 +220,5 @@ Con $N = 50000$ simulaciones, hemos obtenido una estimación muy cercana al valo
 
 Para visualizar el error Monte Carlo, se agrega una banda de confianza aproximada al 95% alrededor de la curva de convergencia. La banda se ensancha cerca del inicio y se contrae como $1/\sqrt{N}$, mostrando que la incertidumbre muestral cae lentamente pero de forma predecible.
 
-**Conclusión de la Parte 1:** la evidencia empírica sugiere que el generador bueno y la estimación de $\pi$ cumplen con el comportamiento esperado, mientras que RANDU exhibe fallas estructurales incompatibles con su uso en simulación seria. Esta parte muestra la importancia de combinar observación gráfica, pruebas estadísticas e interpretación teórica para evaluar resultados simulados.
+## Conclusiones
+La evidencia empírica sugiere que el generador bueno y la estimación de $\pi$ cumplen con el comportamiento esperado, mientras que RANDU exhibe fallas estructurales incompatibles con su uso en simulación seria. Esta parte muestra la importancia de combinar observación gráfica, pruebas estadísticas e interpretación teórica para evaluar resultados simulados.
