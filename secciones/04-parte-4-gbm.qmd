@@ -157,7 +157,7 @@ for dt_i, err_i in zip(dt_grid, err_mean):
 
 ## Interpretación de resultados
 
-Los resultados esperados para este experimento son coherentes con la teoría del GBM. En la @fig-4-1-1, las trayectorias individuales de Euler-Maruyama fluctúan alrededor de la tendencia media, pero no la siguen de manera exacta: eso refleja el efecto acumulativo del ruido browniano. La banda simulada 5%-95% resume mejor la dispersión que una sola línea de media y muestra cómo la incertidumbre se ensancha con el tiempo.
+Los resultados esperados para este experimento son coherentes con la teoría del GBM. En la @fig-4-1-1, las trayectorias individuales de Euler-Maruyama fluctúan alrededor de la tendencia media, pero no la siguen de manera exacta: Esto refleja el efecto acumulativo del ruido browniano. El uso de la banda 5%-95% resulta más informativo que la media simple para visualizar la dispersión y muestra cómo la incertidumbre se ensancha con el tiempo.
 
 En la @fig-4-1-2, la distribución terminal de Euler-Maruyama se compara con la obtenida por la solución exacta sobre la misma malla y con la curva log-normal teórica. La coincidencia entre la solución exacta y la densidad analítica valida la formulación del GBM, mientras que cualquier separación entre Euler-Maruyama y esa referencia cuantifica el error de discretización.
 

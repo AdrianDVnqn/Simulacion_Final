@@ -4,7 +4,13 @@
 
 ## Introducción
 
-En esta sección se presenta la posterior analítica de un ejemplo binomial simple (Beta conjugada) que usaremos como referencia para validar el muestreo Metropolis–Hastings.
+En esta sección presentamos de forma breve la inferencia bayesiana y el algoritmo Metropolis–Hastings. En inferencia bayesiana se combinan la verosimilitud de los datos y una distribución previa para obtener la distribución posterior:
+
+$$p(\theta\mid \text{datos}) \propto L(\text{datos}\mid\theta)\,p(\theta),$$
+
+que es la base para cuantificar incertidumbre en parámetros y tomar decisiones probabilísticas. Metropolis–Hastings es un método MCMC que genera una cadena de Markov con la posterior como distribución estacionaria: en cada iteración se propone un nuevo estado desde una distribución de propuesta y se acepta con probabilidad dada por la razón de densidades (la regla de Metropolis), lo que permite muestrear la posterior cuando no es posible obtenerla en forma cerrada.
+
+Usaremos un ejemplo binomial con prior Beta (conjugado) como referencia analítica para validar que el muestreo MH reproduce la posterior teórica.
 
 ## Posterior teórica
 

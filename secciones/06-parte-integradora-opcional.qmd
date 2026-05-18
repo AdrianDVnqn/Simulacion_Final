@@ -112,7 +112,7 @@ cat(sprintf("Tiempo medio de espera: %.2f horas\n", mean(df_integrada$wait)))
 cat(sprintf("Diagnóstico de estabilidad: rho = %.3f < 1\n", rho_integrada))
 ```
 
-```{r fig-6-1-1, fig.cap="Parte integradora — Biomarcador al momento de atención vs tiempo de espera (línea roja: umbral clínico = 12)."}
+```{r fig-6-1-1, fig.cap="Parte integradora — Biomarcador al momento de atención vs. tiempo de espera (línea roja: umbral clínico = 12)."}
 ggplot(df_integrada, aes(x = wait, y = biomarker, color = late)) +
   geom_point(alpha = 0.65, size = 1.6) +
   geom_hline(yintercept = threshold, linetype = "dashed", color = "red") +
@@ -128,6 +128,6 @@ ggplot(df_integrada, aes(x = wait, y = biomarker, color = late)) +
 
 La simulación integra varios componentes de la materia: genera números pseudoaleatorios para los tiempos de llegada y servicio, usa el biomarcador que sigue un proceso estocástico continuo, y combina eventos discretos con una dinámica continua. A diferencia de la versión inestable, aquí el sistema se parametriza en un régimen estable con $\rho = 5/8 = 0.625 < 1$, lo que permite interpretar los resultados en equilibrio aproximado.
 
-Los resultados muestran una asociación positiva entre tiempo de espera y biomarcador al momento de atención: cuando la cola se alarga, aumenta la probabilidad de que el paciente sea atendido con el biomarcador ya por encima del umbral. Esa relación tiene sentido clínico porque la espera prolongada funciona como un proxy de demora en la atención.
+Los resultados muestran una asociación positiva entre tiempo de espera y biomarcador al momento de atención: cuando la cola se alarga, aumenta la probabilidad de que el paciente sea atendido con el biomarcador ya por encima del umbral. Esta asociación es esperable desde el punto de vista clínico: a mayor demora en la atención, aumenta el tiempo de evolución del biomarcador en el paciente.
 
 Desde una perspectiva clínica, esto sugiere que **una política de atención más ágil o una mayor capacidad de servicio reduce el riesgo de superar el umbral crítico antes de ser atendido**. En el régimen actual con intensidad media de llegadas $E[\lambda(t)] = 5$ pacientes/hora y servicio $\mu = 8$, la cola permanece estable y el porcentaje de pacientes en riesgo puede interpretarse como una proporción estacionaria del sistema, no como un artefacto de sobrecarga.

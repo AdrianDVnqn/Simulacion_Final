@@ -2,26 +2,19 @@
 
 # Parte 1 — Generación de Números Pseudoaleatorios y Monte Carlo
 
-## Implementación de un LCG
-
-El Generador Congruencial Lineal (LCG) sigue la recurrencia:
-
-$$X_{n+1} = (a \cdot X_n + c) \mod m, \quad U_n = X_n / m$$
-
-Se implementan **dos conjuntos de parámetros**: uno de calidad reconocida (glibc/ANSI C) y uno defectuoso (RANDU).
-
-**Hipótesis de trabajo:** el LCG de referencia debe comportarse de forma compatible con una secuencia uniforme sin dependencia serial fuerte, mientras que RANDU debería mostrar fallas estructurales aunque su histograma marginal parezca razonable. Como control, se usa `runif()` de R como referencia empírica.
 ## Introducción
 
 Los números pseudoaleatorios son fundamentales en simulación estocástica. Un Generador Congruencial Lineal (LCG) implementa la recurrencia:
 
 $$X_{n+1} = (a \cdot X_n + c) \mod m, \quad U_n = X_n / m$$
 
-El método es simple pero su calidad depende críticamente de los parámetros. **Hipótesis de trabajo:** un LCG con parámetros de referencia (glibc) debe pasar diagnósticos básicos (uniformidad, independencia serial), mientras que un generador defectuoso (RANDU) exhibirá fallas estructurales incluso si marginalmenteparece uniforme.
+El método es simple pero su calidad depende críticamente de los parámetros. 
 
 ## Metodología — Diagnóstico de LCG
 
-Se implementan dos conjuntos de parámetros: uno de calidad reconocida (glibc/ANSI C) y uno defectuoso (RANDU), con control `runif()` de R.
+Se implementan **dos conjuntos de parámetros**: uno de calidad reconocida (glibc/ANSI C) y uno defectuoso (RANDU).
+
+**Hipótesis de trabajo:** el LCG de referencia debe comportarse de forma compatible con una secuencia uniforme sin dependencia serial fuerte, mientras que RANDU debería mostrar fallas estructurales aunque su histograma marginal parezca razonable. Como control, se usa `runif()` de R como referencia empírica.
 
 ### Implementación en R
 
@@ -84,7 +77,7 @@ ggplot(df_hist, aes(x = valor, fill = tipo)) +
 
 Los histogramas (ver @fig-1-1-1) muestran que ambos generadores producen distribuciones marginales aproximadamente uniformes. Sin embargo, este resultado por sí solo no es suficiente para validar la calidad de un generador: la uniformidad marginal puede ocultar dependencias de mayor orden que solo aparecen al analizar la estructura tridimensional.
 
-### Gráfico de triples (u_i, u_{i+1}, u_{i+2})
+### Gráfico de triples ($u_i, u_{i+1}, u_{i+2}$)
 
 El gráfico de triples revela la estructura de hiperplanos característica del LCG defectuoso.
 Se muestran 4 vistas: LCG bueno a la izquierda, RANDU a la derecha, con dos azimuths para comparar la estructura de planos.
@@ -159,9 +152,9 @@ En cuanto al período, un LCG con módulo $m = 2^{31}$ puede alcanzar período m
 
 ## 1.2 Estimación de pi por Monte Carlo
 
-Se generan $N$ puntos uniformes en $[0,1]^2$ y se estima:
+Se generan $N$ puntos uniformes en $[0,1]^2$ y se estima usando la media muestral del indicador:
 
-$$\hat{\pi} \approx 4 \cdot \frac{\#\{x_i^2 + y_i^2 \le 1\}}{N}$$
+$$\hat{\pi} \approx 4 \cdot \frac{1}{N}\sum_{i=1}^N \mathbf{1}\{x_i^2 + y_i^2 \le 1\}$$
 
 ```{r fig-1-2-1, fig.cap="Convergencia de la estimación de pi. La curva converge al valor teórico (línea roja punteada)."}
 set.seed(42)
@@ -221,4 +214,5 @@ Con $N = 50000$ simulaciones, hemos obtenido una estimación muy cercana al valo
 Para visualizar el error Monte Carlo, se agrega una banda de confianza aproximada al 95% alrededor de la curva de convergencia. La banda se ensancha cerca del inicio y se contrae como $1/\sqrt{N}$, mostrando que la incertidumbre muestral cae lentamente pero de forma predecible.
 
 ## Conclusiones
-La evidencia empírica sugiere que el generador bueno y la estimación de $\pi$ cumplen con el comportamiento esperado, mientras que RANDU exhibe fallas estructurales incompatibles con su uso en simulación seria. Esta parte muestra la importancia de combinar observación gráfica, pruebas estadísticas e interpretación teórica para evaluar resultados simulados.
+
+Los resultados muestran que el generador bueno y la aproximación de $\pi$ funcionan tal como se esperaba. En cambio, RANDU tiene fallas de estructura tan graves que directamente no sirve para ninguna simulación seria. Esto nos deja en claro que para evaluar bien una simulación hay que combinar los gráficos, los tests estadísticos y la teoría.
